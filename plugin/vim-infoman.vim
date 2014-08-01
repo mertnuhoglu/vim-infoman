@@ -127,7 +127,7 @@ function! ExtractLinesWithSearchWords()
 endfunction
 command! ExtractLinesWithSearchWords call ExtractLinesWithSearchWords()
 
-" fold current note in notes.otl
+" fold current note in notes.otl 
 function! FoldCurrentNote()
 	" Replace blank lines with tabs
 	?^_
