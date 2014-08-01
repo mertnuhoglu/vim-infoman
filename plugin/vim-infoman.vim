@@ -127,3 +127,35 @@ function! ExtractLinesWithSearchWords()
 endfunction
 command! ExtractLinesWithSearchWords call ExtractLinesWithSearchWords()
 
+" fold current note in notes.otl
+function! FoldCurrentNote()
+	" Replace blank lines with tabs
+	?^_
+	norm 2jVnNkk
+	silent! '<,'>s/^$/\t/
+	norm V
+	" Indent current note except its header
+	?^_
+	norm jjVNkk>
+	" Close fold
+	?^_
+	norm j
+	foldclose
+endfunction
+command! FoldCurrentNote call FoldCurrentNote()
+
+" yank folded current note in notes.otl to paste to keynote
+function! YankFoldedCurrentNote()
+	" Replace tabbed blank lines with blanks
+	?^_
+	norm 2jVnNkk
+	silent! '<,'>s/^\t$//
+	norm V
+	" Decrease Indent current note except its header
+	?^_
+	norm jjVNkk<
+	" Yank
+	?^_
+	norm jVNkky
+endfunction
+command! YankFoldedCurrentNote call YankFoldedCurrentNote()
