@@ -247,12 +247,13 @@ endfunction
 command! ConvertKeynoteFile call ConvertKeynoteFile() 
 
 function! DataflowFromRCode()
-	norm ggyG
+	let @f = expand('%')
+	norm! gg"0yG
 	split
 	enew
 	set buftype=nofile
 	file dataflow
-	norm P
+	norm! "0p
 	" retain only i/o keywords
 	g/#/d
 	v/\(single\|process\|read\|write\|function\|download\|unzip\|convert\|main\).*(/d
@@ -270,7 +271,10 @@ function! DataflowFromRCode()
 	g/print$/d
 	" now remove functions without anything below
 	g/^\(\w\|\.\).*\n^\(\w\|\.\)\@=/d
-	norm gg>G
+	execute 'norm! ggO'
+	norm! "fP
+	norm! j>G
+	norm! gg"dyG
 endfunction
 command! DataflowFromRCode call DataflowFromRCode()
 
@@ -337,31 +341,44 @@ function! SubstituteNameInBufDo(old_name, new_name)
 endfunction
 command! -nargs=+ SubstituteNameInBufDo call SubstituteNameInBufDo(<f-args>)
 
+function! DataflowScript(script_filename)
+	exe 'b ' . a:script_filename
+	DataflowFromRCode
+	bd
+	EFlowDocumentationPlehn
+	norm! G"dp
+endfunction
+
+function! DataflowAllScripts()
+	" run on a buffer list of R script filenames such as:
+	" index_controller.R
+	" index_download_functions.R
+	let files = filter(getline('1','$'), 'v:val =~ "\w*\.R\s*$"')
+	for file in files
+		call DataflowScript(file)
+	endfor
+endfunction
+command! DataflowAllScripts call DataflowAllScripts()
+
+function! X(script_filename)
+	echo a:script_filename
+	exe 'b ' . a:script_filename
+	DataflowFromRCode
+	"bd
+	"EFlowDocumentationPlehn
+	"norm! G2k"dpG
+endfunction
+
 function! Y()
-	norm ggyG
-	split
-	enew
-	set buftype=nofile
-	file dataflow
-	norm P
-	" retain only i/o keywords
-	g/#/d
-	v/\(single\|process\|read\|write\|function\|download\|unzip\|convert\|main\).*(/d
-	" filter function calls/documentary uses of io keywords
-	g/write \|read \|log(\|@todo\|^\s*#/d
-	" filter out read/write function definitions
-	g/^read\|^write/d
-	g/read_\|\./ s/.*read./\t< /
-	%s/(.*)//g
-	g/write_\|\./ s/.*write./\t> /
-	%s/ = function.*//
-	"" keep process function calls
-	g/=\s*process_.*/ s/^.*=\s*/\t/
-	g/=/d
-	g/print$/d
-	" now remove functions without anything below
-	g/^\(\w\|\.\).*\n^\(\w\|\.\)\@=/d
-	norm gg>G
+	"g/^\w*\.R\s*$/call X(getline("."))
+	"g/^\w*\.R\s*$/call X('filing_functions.R')
+	let files = filter(getline('1','$'), 'v:val =~ "\w*\.R\s*$"')
+	for file in files
+		call X(file)
+	endfor
+	"call X('filing_functions.R')
+	"b filing_functions.R
+	"DataflowFromRCode
 endfunction
 command! Y call Y()
 
