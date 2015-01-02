@@ -42,7 +42,7 @@ function! ExtractTagsWithUnderlineSymbol()
 	" Input:
 	" Keynote text file
 	" Output:
-	" lines starting with tag words such as _gtd
+	" lines starting with tag words such as _gtd
 	CopyToScratch
 	v/^_/d
 	%s/ \+$//
@@ -54,7 +54,7 @@ function! ExtractTagsWithUnderlineSymbolSingle()
 	" Input:
 	" Keynote text file
 	" Output:
-	" tag words such as _gtd
+	" tag words such as _gtd
 	silent ExtractTagsWithUnderlineSymbol
 	silent %s/ .*//
 	sort u
@@ -65,7 +65,7 @@ function! ExtractTagsWithAtSymbol()
 	" Input:
 	" Keynote text file
 	" Output:
-	" lines starting with @some_tag
+	" lines starting with @some_tag
 	CopyToScratch
 	v/^@/d
 	%s/ \+$//
@@ -159,3 +159,209 @@ function! YankFoldedCurrentNote()
 	norm jVNkky
 endfunction
 command! YankFoldedCurrentNote call YankFoldedCurrentNote()
+noremap <Leader>i :YankFoldedCurrentNote<CR>
+
+command! SaveAndSource exe 'w'|exe 'source %'
+noremap <S-F12> SaveAndSource
+
+function! TestDelete()
+	/id=reportlast
+	"norm V
+	"/id=ref
+	"norm d
+endfunction
+command! TestDelete call TestDelete()
+
+function! ReportLastIds() 
+	norm gg
+	/^_ref
+	/id=reportlast
+	norm V
+	/^_ref
+	norm kd
+	norm O_ref id=reportlast
+	"norm i_ref id=reportlast
+	norm mp
+	norm o
+	norm mq
+	g/id=last/co'p
+	"norm Gmq
+	'p,'qs/\d\+\.* *//
+	norm 'pV'q20<
+	'p,'qs/id=\(r_\d\+\)/<url:#r=\1>/
+	'p,'qs/id=\(last\d*\)/\1/
+endfunction
+command! ReportLastIds call ReportLastIds()
+
+" ^\\(\\t*\\)\\(> *\\)*
+command! -range=% RemovePreSymbols  <line1>,<line2>s/^\(\t*\)\(> *\)*/\1/
+command! -range=% RemovePreSymbols2  <line1>,<line2>s/^\\(\\t*\\)\\(> *\\)*/\\1/
+
+" Sort all tags starting with '_' and move them to the end
+function! SortNoteTags()
+	norm ggyG
+	let text = @"
+	ExtractTagsWithUnderlineSymbolSingle
+	file sorted_notes
+	let words = ReadWordsInFile()
+	echo words
+	%d _
+	put = text
+	for word in words
+		exe 'g/^'.word.'\>/,/^_/-1 m$ '
+	endfor
+	set ft=vo_base
+endfunction
+command! SortNoteTags call SortNoteTags()
+
+" Inp:	a list of words
+" word1
+" word2
+" Out:   read into a vimscript variable
+function! ReadWordsInFile()
+	ReplaceEndOfLineWithComma
+	%join
+	SurroundWordsWithQuotes
+	%s/.*/[\0]/
+	let line=getline('.')
+	exe 'let words='.line
+	return words
+endfunction
+
+function! TestReadWordsIntoVariable()
+	let words = ReadWordsInFile()
+	echo words
+endfunction
+ 
+function! ConvertKeynoteFile()
+	g/^--- \d/ s/\(^--- \)\(\d\)\(.*\)/\1\2\3{{{\2/
+	set foldmethod=marker
+   set noignorecase
+   silent! %s/ý/ı/g
+   silent! %s/Ý/İ/g 
+   silent! %s/ţ/ş/g
+   silent! %s/đ/ğ/g
+   set ignorecase
+	w
+endfunction
+command! ConvertKeynoteFile call ConvertKeynoteFile() 
+
+function! DataflowFromRCode()
+	norm ggyG
+	split
+	enew
+	set buftype=nofile
+	file dataflow
+	norm P
+	" retain only i/o keywords
+	g/#/d
+	v/\(single\|process\|read\|write\|function\|download\|unzip\|convert\|main\).*(/d
+	" filter function calls/documentary uses of io keywords
+	g/write \|read \|log(\|@todo\|^\s*#/d
+	" filter out read/write function definitions
+	g/^read\|^write/d
+	g/read_\|\./ s/.*read./\t< /
+	%s/(.*)//g
+	g/write_\|\./ s/.*write./\t> /
+	%s/ = function.*//
+	" keep process function calls
+	g/=\s*process_.*/ s/^.*=\s*/\t/
+	g/=/d
+	g/print$/d
+	" now remove functions without anything below
+	g/^\(\w\|\.\).*\n^\(\w\|\.\)\@=/d
+	norm gg>G
+endfunction
+command! DataflowFromRCode call DataflowFromRCode()
+
+function! CodePostgreImportFromListOfDataFiles()
+	" convert flow.otl data input/output descriptions into postgre copy_to code
+	" < company_exchange_from_10k_filings
+	" >
+	" pg = copy_to(db, read_company_exchange_from_10k_filings(), name = 'company_exchange_from_10k_filings', temporary = FALSE)
+	v/<\|>/d
+	%s/^.*\<//
+	sort u
+	%s/\w*/pg = copy_to(db, read_\0(), name = "\0", temporary = FALSE)/
+endfunction
+command! CodePostgreImportFromListOfDataFiles call CodePostgreImportFromListOfDataFiles()
+
+function! Id()
+	" puts id to the end of current line. eg:
+	"
+	" task ... 
+	" >
+	" task ... id=r_246
+	
+	normal! mw
+	/id=r_lastid
+	normal! $"iyiw
+	execute "normal! \<C-A>"
+	normal! 'w
+	execute "normal! A id=\<esc>"
+	normal! "ip
+endfunction
+command! Id call Id()
+
+function! Id2()
+	Id
+	CopyNodeRef
+endfunction
+command! Id2 call Id2()
+
+function! CopyNodeRef()
+	" copies current node with its id properly formatted
+	" install postgre on osx id=r_318
+	" >
+	" install postgre on osx <url:vim-infoman.vim#r=r_318>
+	normal! "xyy
+	split
+	enew
+	set buftype=nofile
+	normal! "xP
+	/id=r
+	normal! n
+	normal! 2w
+	CopyLocationId
+	normal! 2bP
+	normal! ld$
+	normal! ^y$
+	bd
+endfunction
+command! CopyNodeRef call CopyNodeRef()
+
+function! SubstituteNameInBufDo(old_name, new_name)
+	let cmd = 'silent! bufdo %s' . printf('/\<%s\>/%s/g', a:old_name, a:new_name)
+	echom cmd
+	exe cmd
+endfunction
+command! -nargs=+ SubstituteNameInBufDo call SubstituteNameInBufDo(<f-args>)
+
+function! Y()
+	norm ggyG
+	split
+	enew
+	set buftype=nofile
+	file dataflow
+	norm P
+	" retain only i/o keywords
+	g/#/d
+	v/\(single\|process\|read\|write\|function\|download\|unzip\|convert\|main\).*(/d
+	" filter function calls/documentary uses of io keywords
+	g/write \|read \|log(\|@todo\|^\s*#/d
+	" filter out read/write function definitions
+	g/^read\|^write/d
+	g/read_\|\./ s/.*read./\t< /
+	%s/(.*)//g
+	g/write_\|\./ s/.*write./\t> /
+	%s/ = function.*//
+	"" keep process function calls
+	g/=\s*process_.*/ s/^.*=\s*/\t/
+	g/=/d
+	g/print$/d
+	" now remove functions without anything below
+	g/^\(\w\|\.\).*\n^\(\w\|\.\)\@=/d
+	norm gg>G
+endfunction
+command! Y call Y()
+
