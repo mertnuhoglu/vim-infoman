@@ -1,3 +1,45 @@
+" sort words in a line
+command! SortWords call setline('.', join(sort(split(getline('.'), ' ')), " "))
+
+function! SortParagraphs()
+	%s/\(.\+\)\n/\1™/
+	sort
+	%s/™/\r/g
+endfunction
+command! SortParagraphs call SortParagraphs()
+
+" copies the whole text to a scratch win
+function! CopyToScratch()
+	norm ggyG
+	split
+	Enew2
+	norm P
+endfunction
+command! CopyToScratch call CopyToScratch()
+
+" copies the whole text to a scratch win
+function! CopyToScratchNoSplit()
+	norm ggyG
+	Enew2
+	norm P
+endfunction
+command! CopyToScratchNoSplit call CopyToScratchNoSplit()
+
+" searches for given words in a given text
+" copies the found lines to a scratch win
+function! FindWordsInText(words)
+	CopyToScratch
+	"let words=['DTR002', 'DTR003', 'DTR007', 'FUN004']
+	let words=a:words
+	norm Gmx
+	for word in words
+		exe 'g/'.word.'/t$'
+	endfor
+	norm 'xdgg
+	"sort u
+endfunction
+command! FindWordsInText call FindWordsInText()
+
 " Move current note to the end of file 
 " A note is a part of file that starts with "_".
 command! MoveCurrentNoteToEnd .,/^_/- m$<cr>
@@ -17,24 +59,24 @@ function! ExtractListRequirements()
 	" Keynote text
 	" Output:
 	" lines with DTR/FUN/ISS
-	silent! exe 'norm Go---List---'
+	silent! exe 'normal Go---List---'
 	silent! exe 'g/^DTR\d\+\>:/co$' 
-	norm G2o
+	normal G2o
 	silent! exe 'g/^FUN\d\+\>:/co$' 
-	norm G2o
+	normal G2o
 	silent! exe 'g/^ISS\d\+\>:/co$' 
 	/---List---
-	silent! norm dG
+	silent! normal dG
 	split
 	enew
 	set buftype=nofile
-	norm P
+	normal P
 	g/file:\/\/\//d
 	g/\s*>>\s*$/d
 	sort u
 	/^FUN
-	norm 2O
-	norm ggyG
+	normal 2O
+	normal ggyG
 endfunction	
 command! ExtractListRequirements call ExtractListRequirements()
 
@@ -131,15 +173,15 @@ command! ExtractLinesWithSearchWords call ExtractLinesWithSearchWords()
 function! FoldCurrentNote()
 	" Replace blank lines with tabs
 	?^_
-	norm 2jVnNkk
+	normal 2jVnNkk
 	silent! '<,'>s/^$/\t/
-	norm V
+	normal V
 	" Indent current note except its header
 	?^_
-	norm jjVNkk>
+	normal jjVNkk>
 	" Close fold
 	?^_
-	norm j
+	normal j
 	foldclose
 endfunction
 command! FoldCurrentNote call FoldCurrentNote()
@@ -148,15 +190,15 @@ command! FoldCurrentNote call FoldCurrentNote()
 function! YankFoldedCurrentNote()
 	" Replace tabbed blank lines with blanks
 	?^_
-	norm 2jVnNkk
+	normal 2jVnNkk
 	silent! '<,'>s/^\t$//
-	norm V
+	normal V
 	" Decrease Indent current note except its header
 	?^_
-	norm jjVNkk<
+	normal jjVNkk<
 	" Yank
 	?^_
-	norm jVNkky
+	normal jVNkky
 endfunction
 command! YankFoldedCurrentNote call YankFoldedCurrentNote()
 noremap <Leader>i :YankFoldedCurrentNote<CR>
@@ -166,28 +208,28 @@ noremap <S-F12> SaveAndSource
 
 function! TestDelete()
 	/id=reportlast
-	"norm V
+	"normal V
 	"/id=ref
-	"norm d
+	"normal d
 endfunction
 command! TestDelete call TestDelete()
 
 function! ReportLastIds() 
-	norm gg
+	normal gg
 	/^_ref
 	/id=reportlast
-	norm V
+	normal V
 	/^_ref
-	norm kd
-	norm O_ref id=reportlast
-	"norm i_ref id=reportlast
-	norm mp
-	norm o
-	norm mq
+	normal kd
+	normal O_ref id=reportlast
+	"normal i_ref id=reportlast
+	normal mp
+	normal o
+	normal mq
 	g/id=last/co'p
-	"norm Gmq
+	"normal Gmq
 	'p,'qs/\d\+\.* *//
-	norm 'pV'q20<
+	normal 'pV'q20<
 	'p,'qs/id=\(r_\d\+\)/<url:#r=\1>/
 	'p,'qs/id=\(last\d*\)/\1/
 endfunction
@@ -199,12 +241,12 @@ command! -range=% RemovePreSymbols2  <line1>,<line2>s/^\\(\\t*\\)\\(> *\\)*/\\1/
 
 " Sort all tags starting with '_' and move them to the end
 function! SortNoteTags()
-	norm ggyG
+	normal ggyG
 	let text = @"
-	ExtractTagsWithUnderlineSymbolSingle
+	silent! ExtractTagsWithUnderlineSymbolSingle
 	file sorted_notes
-	let words = ReadWordsInFile()
-	echo words
+	silent! let words = ReadWordsInFile()
+	"echo words
 	%d _
 	put = text
 	for word in words
@@ -223,8 +265,7 @@ function! ReadWordsInFile()
 	%join
 	SurroundWordsWithQuotes
 	%s/.*/[\0]/
-	let line=getline('.')
-	exe 'let words='.line
+	exe 'let words='.getline('.')
 	return words
 endfunction
 
@@ -245,38 +286,6 @@ function! ConvertKeynoteFile()
 	w
 endfunction
 command! ConvertKeynoteFile call ConvertKeynoteFile() 
-
-function! DataflowFromRCode()
-	let @f = expand('%')
-	norm! gg"0yG
-	split
-	enew
-	set buftype=nofile
-	file dataflow
-	norm! "0p
-	" retain only i/o keywords
-	g/#/d
-	v/\(single\|process\|read\|write\|function\|download\|unzip\|convert\|main\).*(/d
-	" filter function calls/documentary uses of io keywords
-	g/write \|read \|log(\|@todo\|^\s*#/d
-	" filter out read/write function definitions
-	g/^read\|^write/d
-	g/read_\|\./ s/.*read./\t< /
-	%s/(.*)//g
-	g/write_\|\./ s/.*write./\t> /
-	%s/ = function.*//
-	" keep process function calls
-	g/=\s*process_.*/ s/^.*=\s*/\t/
-	g/=/d
-	g/print$/d
-	" now remove functions without anything below
-	g/^\(\w\|\.\).*\n^\(\w\|\.\)\@=/d
-	execute 'norm! ggO'
-	norm! "fP
-	norm! j>G
-	norm! gg"dyG
-endfunction
-command! DataflowFromRCode call DataflowFromRCode()
 
 function! CodePostgreImportFromListOfDataFiles()
 	" convert flow.otl data input/output descriptions into postgre copy_to code
@@ -313,6 +322,13 @@ function! Id2()
 endfunction
 command! Id2 call Id2()
 
+function! CopyNodeRef2()
+	CopyNodeRef
+	execute "normal! o\<Tab>"
+	normal! p
+endfunction
+command! CopyNodeRef2 call CopyNodeRef2()
+
 function! CopyNodeRef()
 	" copies current node with its id properly formatted
 	" install postgre on osx id=r_318
@@ -323,7 +339,7 @@ function! CopyNodeRef()
 	enew
 	set buftype=nofile
 	normal! "xP
-	/id=r
+	/id=\w
 	normal! n
 	normal! 2w
 	CopyLocationId
@@ -334,6 +350,25 @@ function! CopyNodeRef()
 endfunction
 command! CopyNodeRef call CopyNodeRef()
 
+" return-done bookmarking
+" assumes:
+"	mark source (return place) as s
+"	mark destination (done place) as d
+function! IdPair()
+	normal! 's
+	Id2
+	execute "normal! o\<Tab>\<c-r>*"
+	normal! 't
+	execute "normal! o\<Tab>return: \<c-r>*"
+	normal! k
+	Id2
+	execute "normal! o\<Tab>\<c-r>*"
+	normal! 's
+	execute "normal! jodone: \<c-r>*"
+endfunction
+command! IdPair call IdPair()
+
+" replace change name
 function! SubstituteNameInBufDo(old_name, new_name)
 	let cmd = 'silent! bufdo %s' . printf('/\<%s\>/%s/g', a:old_name, a:new_name)
 	echom cmd
@@ -341,24 +376,18 @@ function! SubstituteNameInBufDo(old_name, new_name)
 endfunction
 command! -nargs=+ SubstituteNameInBufDo call SubstituteNameInBufDo(<f-args>)
 
-function! DataflowScript(script_filename)
-	exe 'b ' . a:script_filename
-	DataflowFromRCode
-	bd
-	EFlowDocumentationPlehn
-	norm! G"dp
+function! EnewAndPaste()
+	split
+	enew
+	set buftype=nofile
+	normal! P
 endfunction
+command! EnewAndPaste call EnewAndPaste()
 
-function! DataflowAllScripts()
-	" run on a buffer list of R script filenames such as:
-	" index_controller.R
-	" index_download_functions.R
-	let files = filter(getline('1','$'), 'v:val =~ "\w*\.R\s*$"')
-	for file in files
-		call DataflowScript(file)
-	endfor
+function! RemoveInvalidSpace()
+	bufdo silent! %s/ / /g
 endfunction
-command! DataflowAllScripts call DataflowAllScripts()
+command! RemoveInvalidSpace call RemoveInvalidSpace()
 
 function! X(script_filename)
 	echo a:script_filename
@@ -366,7 +395,7 @@ function! X(script_filename)
 	DataflowFromRCode
 	"bd
 	"EFlowDocumentationPlehn
-	"norm! G2k"dpG
+	"normal! G2k"dpG
 endfunction
 
 function! Y()
@@ -381,4 +410,5 @@ function! Y()
 	"DataflowFromRCode
 endfunction
 command! Y call Y()
+
 
