@@ -1,5 +1,6 @@
-command! Enew2 enew | set buftype=nofile
+command! -bar Enew2 enew | set buftype=nofile
 command! Enew3 split | enew | set buftype=nofile
+command! En2 Enew2 
 cnoremap En2 Enew2
 cnoremap En3 Enew3
 function! Enew4()
@@ -35,7 +36,7 @@ function! CopyToScratch()
 	Enew2
 	norm P
 endfunction
-command! CopyToScratch call CopyToScratch()
+command! CopyToScratch call CopyToScratch(ku_rdb/scripts/deprecated.R)
 
 " copies the whole text t	- a scratch win
 function! CopyToScratchNoSplit()
@@ -60,8 +61,8 @@ function! FindWordsInText(words)
 endfunction
 command! FindWordsInText call FindWordsInText()
 
-" Move current note t	- the end of file 
-" A note is a part of file that starts with "_".
+" Move current note t	- the end of fku_rdb/scripts/deprecated.Rile 
+" A note is a part of file that starts with "_"ku_rdb/scripts/deprecated.R.
 command! MoveCurrentNoteToEnd .,/^_/- m$<cr>
 
 function! SortRequirements()
@@ -76,7 +77,7 @@ command! SortRequirements call SortRequirements()
 
 function! ExtractListRequirements()
 	" Input:
-	" Keynote text
+	" Keynote tku_rdb/scripts/deprecated.Rext
 	" Output:
 	" lines with DTR/FUN/ISS
 	silent! exe 'normal Go---List---'
@@ -87,9 +88,7 @@ function! ExtractListRequirements()
 	silent! exe 'g/^ISS\\d\\+\\>:/co$' 
 	/---List---
 	silent! normal dG
-	split
-	enew
-	set buftype=nofile
+	Enew3
 	normal P
 	g/file:\\/\\/\\//d
 	g/\\s*>>\\s*$/d
@@ -208,6 +207,20 @@ command! FoldCurrentNote call FoldCurrentNote()
 
 " yank folded current note in notes.otl t	- paste t	- keynote
 function! YankFoldedCurrentNote()
+	" Input:
+	" _sss
+	" 
+	" t3
+	" t4
+	" 
+	" _end
+	" Output:
+	" 
+	" t3
+	" t4
+	" 
+	" Explain: copy between two markers that start with underscore `_` char
+	"
 	" Replace tabbed blank lines with blanks
 	?^_
 	normal 2jVnNkk
@@ -221,18 +234,9 @@ function! YankFoldedCurrentNote()
 	normal jVNkky
 endfunction
 command! YankFoldedCurrentNote call YankFoldedCurrentNote()
-noremap <Leader>i :YankFoldedCurrentNote<CR>
 
 command! SaveAndSource exe 'w'|exe 'source %'
 noremap <S-F12> SaveAndSource
-
-function! TestDelete()
-	/id=reportlast
-	"normal V
-	"/id=ref
-	"normal d
-endfunction
-command! TestDelete call TestDelete()
 
 function! ReportLastIds() 
 	normal gg
@@ -391,24 +395,34 @@ endfunction
 command! CopyLineAsUrl call CopyLineAsUrl()
 
 " copy line with id for use in utl.vim url with full path t	- file
-function! CopyIdAsUrl()
+function! CopyRefId()
+	" CopyRefId id=g_00009
+	" some line r=r_00005
+	" >
+	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005>
+	"
 	" copy current file path
 	let filename = expand("%:p")
-	" copy current line 
-	let @* = filename
-	normal! $F#P
+	" /Users/mertnuhoglu/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
+	let filename2 = substitute(filename, '/Users/mertnuhoglu', '\~', '')
+	let filename3 = substitute(filename2, ' (Personal)', '', '')
+	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
 	let line = Strip(getline("."))
-	normal! u
-	let @* = line
+	"		# id=r_00005
+	let id = substitute(line, '.*id=\(\w\+\)', '\1', '')
+	" r_00005
+	let result = printf("<url:file:///%s#r=%s>", filename3, id)
+	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005>
+	return result
 endfunction
-command! CopyIdAsUrl call CopyIdAsUrl()
+command! CopyRefId call CopyRefId()
 
 function! Strip(input_string)
     return substitute(a:input_string, '^\\s*\\(.\\{-}\\)\\s*$', '\\1', '')
 endfunction
 
-" copy location with id
-function! CopyLocationId()
+" copy location under cursor
+function! CopyLocationUnderCursor()
 	" copy current file
 	let filename = expand("%")
 	" copy word under cursor
@@ -416,7 +430,7 @@ function! CopyLocationId()
 	let url = "<url:" . filename . "#r=" . word . ">"
 	let @* = url
 endfunction
-command! CopyLocationId call CopyLocationId()
+command! CopyLocationUnderCursor call CopyLocationUnderCursor()
 
 function! Id()
 	" puts id t	- the end of current line. eg:
@@ -435,47 +449,119 @@ function! Id()
 endfunction
 command! Id call Id()
 
-function! Id2()
-	Id
-	CopyNodeRef
-endfunction
-command! Id2 call Id2()
-
 function! Id3()
-	Id2
-	execute "normal! o\<tab>"
-	normal! lPyy
+	Id
+	PasteRefLine
 endfunction
 command! Id3 call Id3()
 command! -range=% IdSwap <line1>,<line2>s/^\\(\\s*\\)\\(\\w\\+[^<]*\\)\\(<.*>\\)/\\1\\3 \\2/
 
-function! CopyNodeRef2()
-	CopyNodeRef
-	execute "normal! o\<Tab>"
-	normal! p
+function! Id4()
+	PutGlobalId
+	let @* = CopyRefId()
 endfunction
-command! CopyNodeRef2 call CopyNodeRef2()
+command! Id4 call Id4()
 
-function! CopyNodeRef()
+function! Id5()
+	" global ID
+	"
+	" input:
+		" opt5: make it a function 
+	" output:
+		" opt5: make it a function id=g_00009
+		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
+	PutGlobalId
+	call PasteRefLineAsFilePath()
+endfunction
+command! Id5 call Id5()
+command! IdG call Id5()
+
+function! Id7()
+	" lokal id already exists use it as global ID
+	"
+	" input:
+		" opt5: make it a function id=g_00009
+	" output:
+		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
+	call PasteRefLineAsFilePath()
+endfunction
+command! Id7 call Id7()
+command! IdX call Id7()
+
+function! Id6()
+	" input:
+		" opt5: make it a function 
+	" output:
+		" opt5: make it a function id=g_00009
+		" @link: # opt5: make it a function study_trycatch.R#r=g_00009
+	Id5
+	RemoveUrlTag
+	left 2
+endfunction
+command! Id6 call Id6()
+
+function! IdR()
+	" global id for R code
+	"
+	" input:
+		" update_new_fields = function() {
+	" output:
+		" # update_new_fields = function() { # id=g_0009
+		" # update_new_fields = function() { <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#r=g_0009>
+	norm! A # 
+	PutGlobalId
+	call PasteRefLineAsFilePath()
+endfunction
+command! IdR call IdR()
+
+function! PasteRefLineAsFilePath()
+	" wifi connection issues id=g_10099
+	" >
+	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
+	let refid = CopyRefId()
+	normal! ^y$
+	execute "normal! o\<Tab>"
+	normal! lPyy
+	silent! s/^\(\s\+\)#\+\s*/\1/
+	silent! s/id=\w*//
+	let @* = refid
+	normal! $p
+endfunction
+command! PasteRefLineAsFilePath call PasteRefLineAsFilePath()
+command! IdRefpath PasteRefLineAsFilePath 
+
+command! RemoveUrlTag s#<url:.*/## | s#>## | s#^#@link: # | silent! s#klimka##
+
+function! PasteRefLine()
+	" data innovations online course project  id=dat_011
+	" >
+	" data innovations online course project  <url:#r=dat_011>
+	let @* = CopyRefLine()
+	execute "normal! o\<Tab>"
+	normal! lPyy
+endfunction
+command! PasteRefLine call PasteRefLine()
+command! IdRefline PasteRefLine 
+
+function! CopyRefLine()
 	" copies current node with its id properly formatted
 	" install postgre on osx id=r_318
 	" >
 	" install postgre on osx <url:vim-infoman.vim#r=r_318>
 	normal! "xyy
-	split
-	enew
-	set buftype=nofile
+	Enew3
 	normal! "xP
 	/id=\w
 	normal! n
 	normal! 2w
-	CopyLocationId
+	CopyLocationUnderCursor
 	normal! 2bP
 	normal! ld$
 	normal! ^y$
 	bd
+	return @*
 endfunction
-command! CopyNodeRef call CopyNodeRef()
+command! CopyRefLine call CopyRefLine()
 
 " return-done bookmarking
 " assumes:
@@ -483,12 +569,14 @@ command! CopyNodeRef call CopyNodeRef()
 "	mark destination (done place) as d
 function! IdPair()
 	normal! 's
-	Id2
+	Id
+	CopyRefLine
 	execute "normal! o\<Tab>\<c-r>*"
 	normal! 't
 	execute "normal! o\<Tab>return: \<c-r>*"
 	normal! k
-	Id2
+	Id
+	CopyRefLine
 	execute "normal! o\<Tab>\<c-r>*"
 	normal! 's
 	execute "normal! jodone: \<c-r>*"
@@ -504,9 +592,7 @@ endfunction
 command! -nargs=+ SubstituteNameInBufD	- call SubstituteNameInBufDo(<f-args>)
 
 function! EnewAndPaste()
-	split
-	enew
-	set buftype=nofile
+	Enew3
 	normal! P
 endfunction
 command! EnewAndPaste call EnewAndPaste()
@@ -530,9 +616,7 @@ function! Y()
 	" >
 	" <url:filename.txt#tn=## this is title>
 	normal! "xyy
-	split
-	enew
-	set buftype=nofile
+	Enew3
 	normal! "xP
 	CopyLineAsUrl
 	normal! 2bP
@@ -555,13 +639,14 @@ command! ReplaceClass call ReplaceClass()
 " reverse: RemoveBlankLines
 function! ConvertOtl2Md()
 	" put a new line after each non-bullet line
-	v/\\s*-/ s/$/\\r/
+	v/\\s*-/ s/$/\r/
 	" put a new line when a bullet line is succeeded with a non-bullet line
-	g/^\\s*-\\_[^-]*\\_^\\w/ s/$/\\r/
+	g/^\\s*-\\_[^-]*\\_^\\w/ s/$/\r/
 	" remove multiple blank lines
 	g/^\\s*$/,/./-j
 endfunction
 command! ConvertOtl2Md call ConvertOtl2Md()
+command! Comd call ConvertOtl2Md()
 
 " http://stackoverflow.com/questions/11807713/multiple-g-and-v-commands-in-one-statement
 command! -nargs=* -range=% G <line1>,<line2>call MultiG(<f-args>)
@@ -580,6 +665,12 @@ fun! MultiG(...) range
 	 exe a:firstline.",".a:lastline."g/".pattern."/".command
 endfun
 
+function! ConvertCsv2Excel()
+	%s/,/\t/g
+endfunction
+command! ConvertCsv2Excel call ConvertCsv2Excel()
+command! CCsv2Excel call ConvertCsv2Excel()
+
 " convert ascii tables t	- tabbed csv
 function! ConvertTable2Excel()
 	g/---|/d
@@ -591,6 +682,12 @@ function! ConvertTable2Excel()
 endfunction
 command! ConvertTable2Excel call ConvertTable2Excel()
 
+function! ConvertTable2Csv()
+	ConvertTable2Excel
+	%s/\t/,/g
+endfunction
+command! ConvertTable2Csv call ConvertTable2Csv()
+
 function! ConvertEmailRtf2Md()
 	%s/^· \+/- /
 	%s/^o \+/\t- /
@@ -598,14 +695,22 @@ endfunction
 command! ConvertEmailRtf2Md call ConvertEmailRtf2Md()
 
 command! CopyFilename let @* = expand("%:t")
-command! CopyPath let @* = expand("%:p")
+command! Cpf CopyFilename
 function! CopyPath()
+	let path = expand("%:p")
+	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
+	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
+	let @* = path
+endfunction
+command! CopyPath call CopyPath()
+command! Cpp CopyPath
+function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
 	let path = substitute(path, "^\\(.*\\)", "<url:file://\\1>", "")
 	let @* = path
 endfunction
-command! Cpp call CopyPath()
+command! Cpu call CopyPathu()
 
 command! ConvertHomePaths2Tilda silent %s#/Users/mertnuhoglu#\\~#g
 "command! ConvertHomePaths2Tilda %s#/Users/mertnuhoglu#/\\\\~#g
@@ -636,6 +741,7 @@ endfunction
 command! -range=% RemoveBlankLines <line1>,<line2>call s:RemoveBlankLines()
 command! -range=% Rbl <line1>,<line2>call s:RemoveBlankLines()
 "command! -range=% RemoveBlankLines <line1>,<line2>v/^./d
+command! Rbl :g/^\\s*$/d
 
 function! s:RemoveMultipleBlankLines3() range
 	exe a:firstline.",".a:lastline."g/^\\s*$/,/./-j"
@@ -652,8 +758,14 @@ function! Utl2()
 	Utl
 endfunction
 command! Utl2 call Utl2()
+function! Utl3()
+	vsplit
+	wincmd l
+	Utl
+endfunction
 nnoremap İ :Utl<CR>
-nnoremap üi :Utl2<CR>
+nnoremap <Leader>is :Utl2<CR>
+nnoremap <Leader>iv :call Utl3()<CR>
 
 " Navigate to prev/next note
 nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -673,9 +785,7 @@ command! -range=% ConvertSimplenoteGtd2Otl <line1>,<line2>call ConvertSimplenote
 
 function! PutLines2Otl()
 	norm mt
-	split
-	Enew2
-	set buftype=nofile
+	Enew3
 	norm P
 	g/^\\w/ +>
 	RemoveBlankLines
@@ -686,11 +796,11 @@ function! PutLines2Otl()
 endfunction
 command! PutLines2Otl call PutLines2Otl()
 
-function! ConvertFiles2Concat()
+function! ConvertVideoFiles2ConcatWFfmpeg()
 	%s#^#file './#
 	%s#$#'#
 endfunction
-command! ConvertFiles2Concat call ConvertFiles2Concat()
+command! ConvertVideoFiles2ConcatWFfmpeg call ConvertVideoFiles2ConcatWFfmpeg()
 
 function! s:get_visual_selection()
   " Why is this not a built-in Vim script function?!
@@ -706,16 +816,14 @@ function! ConvertOtl2Email() range
 	let lines = s:get_visual_selection()
 	echom lines
 	let @* = lines
-	split
-	Enew2
-	set buftype=nofile
+	Enew3
 	norm "*P
 	%le
 	norm ggyG
 	bd
 endfunction
 command! -range=% ConvertOtl2Email <line1>,<line2>call ConvertOtl2Email()
-command! -range=% COtl2Email <line1>,<line2>call ConvertOtl2Email()
+command! -range=% Coem <line1>,<line2>call ConvertOtl2Email()
 
 function! ConvertDos2Unix()
 	%s/\\r/\\r/g
@@ -733,15 +841,13 @@ function! ConvertTitle2IndexFormat() range
 	"	<url:file:///~/dropbox (btg)/teuis project 30-dev/plans/suggested_readings.md>
 	let lines = s:get_visual_selection()
 	let @* = lines
-	split
-	Enew2
-	set buftype=nofile
+	Enew3
 	norm "*P
 	/^#
 	norm cw-
 	norm dd
 	norm ggP
-	norm j>>
+	"norm j>>
 	norm ggyG
 	bd
 endfunction
@@ -764,7 +870,6 @@ function! ConvertDomainModel2ExcelReady() range
 	let @* = lines
 	split
 	Enew2
-	set buftype=nofile
 	norm "*P
 	v/|/d
 	sort u
@@ -822,8 +927,15 @@ command! ConvertCodeForRepl call ConvertCodeForRepl()
 command! ConvertROutput call ConvertROutput()
 command! ConvertRCombineRemoveColumns call ConvertRCombineRemoveColumns()
 
+function! ConvertTabbedWords2QuotedArray () range
+	exe a:firstline.",".a:lastline."s#\\>\\t\\<#, #g"
+	exe a:firstline.",".a:lastline."SurroundWordsWithDQuotes"
+endfun
+command! -range ConvertTabbedWords2QuotedArray <line1>,<line2>call ConvertTabbedWords2QuotedArray()
+
 " Replace2 Convert
 command! -range=% SurroundCSVWithQuotes <line1>,<line2>s/\\(^\\|, \\)\\?\\([^,]*\\)/\\1'\\2'/g
+command! -range=% SurroundWordsWithDQuotes <line1>,<line2>s/\\<\\w\\+\\>/"\\0"/g
 command! -range=% SurroundWordsWithQuotes <line1>,<line2>s/\\<\\w\\+\\>/'\\0'/g
 command! -range=% SurroundLinesWithQuotes <line1>,<line2>s/.*/'\\0'/
 command! RemoveLinesStartingWithNumbers g/^\\d/d
@@ -837,36 +949,155 @@ command! ReplaceInvisibleSpaces bufdo %s/ / /ge | update
 
 nnoremap <Leader>üo A - opt
 
+function! ConvertYuml2Summary()
+	norm! Go## Summary
+	norm! o
+	norm! mz
+	g/^\s*\[\w\+[|\]]/ co$
+	'z,$ s/^\s\+/    # /
+endfunction
+command! ConvertYuml2Summary call ConvertYuml2Summary()
+
 function! ConvertYuml2TableList()
-	v/^\s*\[\w*|/d
-	%s/|.*//
+	" no need now: R script: 
+	" <url:/Users/mertnuhoglu/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#tn=build_data_dictionary_01 = function() {>
+	/^\s*\[\w\+[|\]]
+	MatchesOnly
+	%s/[|\]].*//
 	%s/\[//
-	"MatchesOnly
-	"%s/\[//g
 	sort u
 endfunction
 command! ConvertYuml2TableList call ConvertYuml2TableList()
+command! CYuml2TableList call ConvertYuml2TableList()
+
+function! ConvertYuml2TableList4Table()
+	CopyToScratch
+	ConvertYuml2TableList
+	ConvertExcel2Table	
+	TableModeEnable
+	TableModeRealign
+endfun
+command! ConvertYuml2TableList4Table call ConvertYuml2TableList4Table()
 
 function! ConvertYuml2DataDictionary()
-	 %s/\s*PK\|FK//g
-	 %s/(\d\+)//g
-	 v/|/d
-	 %s/\(\w\+\)\s*]/\1;]/g
-	 %s/;/\r/g
-	 %s/|/\r/g
-	 g/\<shape\>/d
-	 g/\<objectid\>/d
-	 g/^$/d
-	 g/^voidable\>/d
-	 %left
-	 v/[[\]]/le 1
-	 norm gg0
-	 let @s = 'ma/]mb''awye0j''bkI*nj'
-	 norm! 30@s
-	 g/^]\|\[/d
-	 %s/ /\t/g
+	lcd %:h
+	norm! ggyG
+	enew
+	norm! P
+	ConvertYumlMarkdown2CleanYuml
+	%s/\s*PK\|FK//g
+	%s/(\d\+)//g
+	v/|/d
+	%s/\(\w\+\)\s*]/\1;]/g
+	%s/;/\r/g
+	%s/|/\r/g
+	g/\<shape\>/d
+	g/\<objectid\>/d
+	g/^$/d
+	g/^voidable\>/d
+	%left
+	v/[[\]]/le 1
+	norm! gg0
+	let @s = 'ma/]mb''awye0j''bkI*nj'
+	"norm! @s
+	"norm! 100@s
+	"g/^]\|\[/d
+	"%s/ /\t/g
+	"norm! ggOentity_name	data_field_name	type
+	"%s/\t/,/g
+	"%s/,$//
+	"sav! view/dd_00.csv
 endfun
 command! ConvertYuml2DataDictionary call ConvertYuml2DataDictionary()
+command! CYuml2DataDictionary call ConvertYuml2DataDictionary()
+command! CYDataDictionary call ConvertYuml2DataDictionary()
+
+function! ConvertYumlFixFormat()
+	" fix cardinalities
+	silent! %s#]\s*\(\S*.*\S\)\s*\[#] \1 [#
+	silent! g/[[^\]]*\]/ %s/-\+/-/g
+	silent! %s#\*-#n-#
+	silent! %s#-\*#-n#
+
+	" fix pipe symbols
+	silent! %s#|\s*]#]#
+	" spacing between elements
+	silent! %s#;\s*#; #g
+	" spacing between class name and its attributes
+	silent! %s#|\(\w\+\)#| \1#
+
+	" put ; at the end of attributes
+	silent! g/\s*\[\w*|/ s/\(\w\+\)\s*]/\1; ]/
+
+	" fix attributes
+	silent! g/\s*\[\w*|/ s#\<id\s*;#id LONG PK;#
+	silent! g/\s*\[\w*|/ s#_id\s*;#_id LONG FK;#g
+	silent! g/\s*\[\w*|/ s#_gisid\s*;#_gisid LONG FK;#g
+	silent! g/\s*\[\w*|/ s#\<VARCHAR\>#TEXT#g
+	silent! g/\s*\[\w*|/ s#\<NUMBER\>#LONG#g
+	silent! g/\s*\[\w*|/ s#\<DOUBLE\>#DOUBLE#g
+	silent! g/\s*\[\w*|/ s#\<objectid\>\s*;#objectid LONG PK;#g
+	silent! g/\s*\[\w*|/ s#,#;#g
+	silent! v/\(\<id\>\|_id\>\|\<objectid\>\)/ s#|#| id LONG PK;#
+endfunction
+command! ConvertYumlFixFormat call ConvertYumlFixFormat()
+command! Cyff call ConvertYumlFixFormat()
+
+function! Test4()
+	"norm! mg
+	"normal! 'g
+	"norm! gg
+	"norm! 'g
+	norm! 2jll
+	"norm! dd
+endfunction
+command! Test4 call Test4()
+function! Test3()
+	" remove all non yuml lines
+	"g/[.:#]/d
+	"v/\[[^\]]*\]/d
+
+	"ConvertYumlFixFormat
+
+	"" sorting
+	"sort u
+	"norm! Go
+	norm! mf
+	"g/|/ m $
+	normal! 'f
+	norm! gg
+	norm! 'f
+	norm! dd
+	"norm! "kdG
+	"norm! gg
+	"norm! "kP
+endfunction
+command! Test3 call Test3()
+function! ConvertYumlMarkdown2CleanYuml()  
+	" ConvertYumlMarkdown2CleanYuml()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_10001>
+	" remove all non yuml lines
+	" ed script:
+	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 80-SUPPORT/system_admin/scripts/convert_yuml_markdown_2_clean_yuml>
+	g/[:#]/d
+	" if no bracket, then delete
+	v/\[[^\]]*\]/d
+	v/^\s*\[.*\]\s*$/d
+
+	"ConvertYumlFixFormat
+	%left 4
+
+	" sorting
+	sort u
+	"norm! Go
+	"norm! mz
+	g/|/ m0
+	"norm! 'z
+	"norm! "kdG
+	"norm! gg
+	"norm! "kP
+endfunction
+command! ConvertYumlMarkdown2CleanYuml call ConvertYumlMarkdown2CleanYuml()
+command! CYumlMarkdown2CleanYuml ConvertYumlMarkdown2CleanYuml
 
 function! ConvertGithubPage2ProjectList()
 	" projects/stuff/text/list_github_projects
@@ -891,9 +1122,23 @@ endfunction
 command! -nargs=* -range=% SurroundMdImage <line1>,<line2>call SurroundMdImage()
 
 " convert word -> `word`
+command! SurroundWithDoubleQuotes normal viwS"e
+command! Swdq SurroundWithDoubleQuotes
 command! SurroundWithBackQuotes normal viwS`e
 command! Swq SurroundWithBackQuotes 
-nmap <Leader>sq viwS`e
+command! SurroundWithBrackets normal viwS]e
+command! Swb SurroundWithBrackets 
+nnoremap <Leader>st :Swq<CR>
+nnoremap <Leader>sb :Swb<CR>
+nnoremap <Leader>sq :Swdq<CR>
+"nnoremap w e
+"nnoremap e w
+"onoremap ie iw
+"onoremap ae aw
+"nnoremap de dw
+"nnoremap dw de
+"nnoremap ce cw
+"nnoremap cw ce
 
 function! ConvertMdUrlsWithSpaces2Escaped()
 	g/^\[\w\+\]:\s*/ s/: /:@@/ | s/ /%20/g | s/:@@/: /
@@ -935,12 +1180,20 @@ function! CopyUtlAsPath()
 	let @* = url
 endfunction
 command! CopyUtlAsPath call CopyUtlAsPath()
-nnoremap <Leader>üy :CopyUtlAsPath<Cr>
 
 " csv coloring
 hi CSVColumnEven term=bold ctermbg=0 guibg=DarkGreen
 hi CSVColumnOdd  term=bold ctermbg=17 guibg=DarkBlue
 let g:csv_no_column_highlight = 0
+
+function! CleanRCode()
+  # converts R console code from RStudio
+  # to clean R code
+  g/^>/s/> //
+  g/^\[/s/^/# 
+  g/View/d
+endfun
+command! CleanRCode call CleanRCode()
 
 function! PutRCode()
 	norm! o msi*mt'sj^kxi 'tI# 
@@ -956,3 +1209,504 @@ function! Test2()
 endfunction
 command! Test2 call Test2()
 
+fun! GetFileLine(fn,ln)
+    return readfile(a:fn,'',a:ln)[a:ln-1]
+endfun
+
+function! PutGlobalId()
+	" PutGlobalId id=g_00008
+	let global_refid = '/Users/mertnuhoglu/.vim/.global_refid'
+	" let id = GetFileLine(global_refid, 1)
+	let line = readfile(global_refid, 1)[0]
+	let id = line + 1
+	echo id
+	let new_id = printf("%05d", id)
+	let line2 = [new_id]
+	call writefile(line2, global_refid, '')
+	let @r = printf("id=g_%s", new_id)
+	normal! $A 
+	normal! "rp
+endfunction
+command! PutGlobalId call PutGlobalId()
+command! Pgi call PutGlobalId()
+
+function! PutGlobalProblemId()
+	" PutGlobalProblemId 
+	let global_refid = '/Users/mertnuhoglu/.vim/.global_problemid'
+	" let id = GetFileLine(global_refid, 1)
+	let line = readfile(global_refid, 1)[0]
+	let id = line + 1
+	echo id
+	let new_id = printf("%03d", id)
+	let line2 = [new_id]
+	call writefile(line2, global_refid, '')
+	let @r = printf("id=p%s", new_id)
+	normal! $A 
+	normal! "rp
+endfunction
+command! PutGlobalProblemId call PutGlobalProblemId()
+command! Pgpi call PutGlobalProblemId()
+
+function! ConvertSqlInsert2Excel()
+	" converts:
+	" INSERT INTO T_COMMON_ENUM_VALUE (id,name,category_id) values(800,'şirin',9);
+	" ->
+	" 800	şirin	9
+	" Ex2:
+	" INSERT INTO T_COMMON_ENUM_VALUE (id,name,category_id) values(1043,'Tam su çekim analizi: CO3, HCO3, Cl, SO4, Mg⁺⁺, Na⁺,Quru kalık(madde)',33);
+	" ->
+	/\d\+.*\();\)\@=
+	MatchesOnly
+endfunction
+command! ConvertSqlInsert2Excel call ConvertSqlInsert2Excel()
+
+function! FormatSqlInsert()
+	silent! %s/Insert into/INSERT INTO/
+	silent! %s/Values\>/VALUES/
+	silent! %s/)\s*VALUES\s*(/) VALUES (/
+	silent! g/INSERT/,/INSERT/-j
+endfunction
+command! FormatSqlInsert call FormatSqlInsert()
+
+function! PutRedirLs()
+    redir @l>
+		ls
+    redir END
+    norm "lp
+endfunction
+command! PutRedirLs call PutRedirLs()
+
+function! ConvertUtlUrl2MdUrl()
+	norm! 2fTd0f>d$
+	norm! I[link]: 
+	ConvertMdUrlsWithSpaces2Escaped
+	norm! ci]
+endfunction
+command! ConvertUtlUrl2MdUrl call ConvertUtlUrl2MdUrl()
+
+function! ScrapeApiServices() 
+	" id=g_10021 
+	" function! ScrapeApiServices() <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_10021>
+	g/^\d\+.*/co$
+
+	g/^\s*$/d
+	g/<url/d
+	
+	" list only service titles
+	v/^\d/d
+	%s/^\d\+\.*\s*//
+	sort u
+
+	" delete all redundant lines
+	g/^\s\+/d
+	%s/^#\+//
+	" unify multiple tabs
+	%s/\t\+/\t/g
+endfunction
+command! ScrapeApiServices call ScrapeApiServices()
+
+function! TransliterateAzeriChars()
+	silent! %s/ı/i/g
+	silent! %s/ş/s/g
+	silent! %s/Ş/S/g
+	silent! %s/ı/i/g 
+	silent! %s/İ/I/g 
+	silent! %s/ş/s/g 
+	silent! %s/Ş/S/g 
+	silent! %s/ü/u/g 
+	silent! %s/Ü/U/g 
+	silent! %s/ö/o/g 
+	silent! %s/Ö/O/g 
+	silent! %s/ç/c/g 
+	silent! %s/Ç/C/g 
+	silent! %s/ğ/g/g 
+	silent! %s/Ğ/G/g 
+	silent! %s/ə/e/g 
+endfunction
+command! TransliterateAzeriChars call TransliterateAzeriChars()
+
+function! ConvertDatabaseTableNames2RFunctions()
+	%s#\(\w\+\)#\L\1 = function(db) tbl(db, "\U\1")#
+endfunction
+command! ConvertDatabaseTableNames2RFunctions call ConvertDatabaseTableNames2RFunctions()
+
+function! ConvertJoinLinesWithComma()
+	SurroundWordsWithDQuotes
+	%s/\n/, /
+	s/,\s*$//
+endfunction
+command! ConvertJoinLinesWithComma call ConvertJoinLinesWithComma()
+
+" convert escaped html symbols to readable characters
+function! ConvertHtmlSymbolsToHumanReadable()
+	%s/&lt;/</g
+	%s/&quot;/"/g
+	%s/&amp;/&/g
+	%s/&amp;/\&/g
+	%s/&gt;/>/g
+endfunction
+
+" convert SEC idx file to csv file
+function! ConvertSECidxfile()
+    %s/  \+/\t/g
+    %s/\t*$//
+    set ft=csv
+endfunction
+
+" extract vimeo links
+function! ConvertVimeoLinks()
+    href="\/\d\+"
+    MatchesOnly
+    %s/href="//
+    %s/"//
+    %s,^,http://vimeo.com
+endfunction
+
+" Convert MindMup To Indented Text
+function! ConvertMindMup()
+    v/title/d
+    %s/"title": "//
+    %s/".*//
+    %s/^  //
+endfunction
+
+function! ConvertXMLTagsToPipedList()
+    /<[^>]*>
+    MatchesOnly
+    %s/>//g
+    %s/<//g
+    %s/$/|/
+    %join!
+endfunction
+
+function! ConvertHepsiBuradaXML()
+    silent! g/<rss/.,/<description>/d
+    silent! %s/<!\[CDATA\[//g
+    silent! %s/]]>//g
+    silent! %s/\t//g
+    silent! v/^./d
+    silent! g/<item>/.,/<\/item>/join
+    " replace all pipes with >>> temporarily
+    silent! %s/|/>>>/g
+    " put pipes between tags
+    silent! %s:>\s*<\(\w\+\):>|<\1:g
+    " remove all tags
+    silent! %s/<[^>]*>//g 
+    silent! norm ggOid|title|description|link|image_link|condition|availability|price|sale_price|sale_price_effective_date|brand|shipping|country|service|price|adwords_labels
+    silent! %s/^ *|// 
+    silent! %s/,""$//
+    silent! g/^"$/d
+    silent! set ft=csv
+    ConvertPipeCsvToCommaWithQuotes
+    " replace >>> back to pipes 
+    silent! %s/>>>/|/g
+endfunction
+
+function! ConvertErsaXML()
+    silent! %s/\t//g
+    silent! g/EKALANLAR/d
+    silent! v/^./d
+    silent! g/<URUN>/.,/<\/URUN>/join
+    silent! %s:>\s*<\(\w\+\):>|<\1:g
+    silent! %s/<[^>]*>//g 
+    silent! norm ggOUrunID|UrunAdi|KDV|Kur|StokAdedi|indirimli|ListeFiyat|KategoriAdi|AltKategori|Marka_Adi|Urun_Resmi|Marka_Resmi|Cinsiyet|Kadran_Rengi|Kordon_Cinsi|Kordon_Rengi|Kasa_Sekli|Seri_Adi|Kasa_Cinsi|Kasa_Capi|Cam_Cinsi|Agirlik|Takvim|Kasa_Yuksekligi|Kasa_Kalinligi|Su_Gecirmezlik|Ek_Alan15
+    silent! %s/^ *|// 
+    silent! %s/,""$//
+    silent! g/^"$/d
+    silent! set ft=csv
+    ConvertPipeCsvToCommaWithQuotes
+endfunction
+
+function! ConvertVestelXML()
+    silent! g/<category /d
+    silent! g/category>/d
+    silent! g/<url>\//d
+    silent! g/<categorylist/.,/<\/categorylist/join
+    silent! %s:</name> <name>:;:g
+    silent! g/<products>/.,/<\/products>/join
+    silent! %s/> </>|</g
+    silent! %s/<[^>]*>//g 
+    silent! norm ggOSKU|Name|Price|DiscountPrice|Info|URL|CategoryList
+    silent! %s/^ *|// 
+    silent! %s/|||/||/
+    silent! %s/||$//
+    silent! v/^./d
+    silent! set ft=csv
+    ConvertPipeCsvToCommaWithQuotes
+endfunction
+
+function! ConvertPipeCsvToCommaWithQuotes()
+    silent! %s/"/""/g
+    silent! %s/^\|$/"/g
+    silent! %s/|/"|"/g
+    silent! %s/"|"/","/g
+endfunction
+
+function! ConvertPentaXML()
+    g/^</d
+    %s/<stok//
+    %s/ \w\+="\([^"]*\)"/\1|/g
+    %s/ \/>//
+    %s/^  //
+    %s/|/\t/g
+    set bomb | set fileencoding=utf-8 
+endfunction
+
+" go to 5. column then run it
+function! ConvertPentaCSVUrunDetay()
+    Column
+    enew
+    put
+    %s/\t//g
+    %s:^\(.*\)\>:wget -O \1.xml http://xml.bayinet.com.tr/urun_detay.aspx?kod=\1:
+    set ff=unix
+endfunction
+
+command! ConvertPipes2Tabs %s/|/\\t/g
+
+function! ConvertPazarzReviewExcelToCsv()
+    %s/\t/|/g
+    %s/"/""/g
+    %s/^\|$/"/g
+    %s/|/"|"/g
+    %s/"|"/","/g
+    set ft=csv
+    norm gg
+    DeleteColumn
+    MoveColumn 1 3
+    MoveColumn 1 3
+    %s/^/"post","baslanmadi",/g
+endfunction
+
+function! ConvertKeynoteExportTurkishChars()
+    set noignorecase
+    silent! %s/ý/ı/g
+    silent! %s/Ý/İ/g 
+    silent! %s/ţ/ş/g
+    silent! %s/đ/ğ/g
+    set ignorecase
+endfunction
+
+" convert list of email addresses to gmail email address. for example:
+" Ali Niyazi, ali@gmail.com
+" Mehmet Ali, mehmetali@gmail.com
+" to
+" Ali Niyazi <ali@gmail.com>, Mehmet Ali <mehmetali@gmail.com>
+function! ConvertEmailListToGmailAddresses()
+    %s/,\s*/ </
+    %s/$/>,/
+    %join
+    %s/,\s*$//
+endfunction
+
+function! ConvertGDocsLinksToWget()
+    %s/^.*: //
+    %s/^/'
+    %s/\t/' 
+    %s/^/wget -O 
+endfunction
+
+function! PutHistory()
+    redir @a>
+    history : -10,
+    redir END
+    norm "ap
+endfunction
+command! PutHistory call PutHistory()
+
+" Convert code for R/REPL r2
+function! ConvertCodeForRepl()
+	%s/^\s*//g
+	v/^>/d
+	%s/^> //g
+	norm ggyG
+endfunction
+
+" Convert output of R into csv like list
+function! ConvertROutput()              
+    %s/^ *\[\d\+\] *//
+    %s/ \+/,\r/g
+	v/./d
+	"%join
+endfunction
+
+" Convert R output for combine.remove.columns
+"ADR.TSO", "ADR.TSO.g", "ADR.TSO.h"
+"Caveat.Emptor"
+"IPOyear", "IPOyear.g", "IPOyear.h"
+">
+"merged.data = combine.remove.columns(merged.data, 'ADR.TSO', 'ADR.TSO', 'ADR.TSO.g', 'ADR.TSO.h')
+"merged.data = combine.remove.columns(merged.data, 'IPOyear', 'IPOyear', 'IPOyear.g', 'IPOyear.h')
+function! ConvertRCombineRemoveColumns()
+    "ConvertROutput
+    "sort
+	" satırları birleştir
+    %s/,$//
+    v/,/m$
+    %s/"/'/g
+    %s/^'\(.\{-}\)\(\.\w\)\?', /'\1', \0/
+    %s/.*/merged.data = combine.remove.columns(merged.data, \0)/
+endfunction
+
+function! ConvertTree2Otl()
+		%s/[└├─│]/ /g
+		%s/ / /g
+		%<<
+endfunction
+command! ConvertTree2Otl call ConvertTree2Otl()
+
+function! ConvertYoutrackIssueTitles()
+	g/^×.*/d
+	g/^T-\d\+$/norm A:
+	g/^T-\d\+:$/j
+	v/^T-\d\+: .*$/d
+	%s/^/yt:/
+endfunction
+command! ConvertYoutrackIssueTitles call ConvertYoutrackIssueTitles()
+
+" custom shortcuts 
+nnoremap <Leader>ç :CopyLocation<CR>
+nnoremap <Leader>Ç :CopyLineAsUrl<CR>
+
+function! ExtractTitleFromUrl()
+	silent! s#/\s*$##
+	norm! $F/l"ty$>>
+	execute "norm! O\<C-R>t"
+	norm! <<
+	silent! s#-# #g
+	silent! s#?.*##
+	silent! s#%20# #g
+endfunction
+command! ExtractTitleFromUrl call ExtractTitleFromUrl()
+command! ExTitleFromUrl ExtractTitleFromUrl 
+
+function! TestDebug()
+	CopyRefId
+	let url = @*
+	normal! ^y$
+	execute "normal! o\<Tab>"
+	normal! lPyy
+	silent! s/^\(\s\+\)#\+\s*/\1/
+	silent! s/id=\w*//
+	let @* = url
+endfunction
+command! TestDebug call TestDebug()
+
+function! ConvertRmd2HandoutNotes()
+	" remove <div> tags and @annotation tags from Rmd docs to prepare handout notes for end users
+	"
+	" <div class="notes">
+	" There are too many different data mining algorithms. But there are only a small set of problem types.  @mp3=p000_01
+	" </div>
+	" -->>
+	" There are too many different data mining algorithms. But there are only a small set of problem types.  
+	"
+	g/<div\|div>/d
+	%s/@\w\+\S*\s*$//
+endfunction
+command! ConvertRmd2HandoutNotes call ConvertRmd2HandoutNotes()
+
+function! CGtd2Rdb()
+	" 1: clean headers
+	" primary
+	" ->
+	" (blank line)
+	" # primary
+	" (blank line)
+	g/^\w/norm I## 
+endfunction
+command! CGtd2Rdb call CGtd2Rdb()
+
+function! SurroundQuotesForIndentedLines()
+	" Input:
+	" line1
+	" line2
+	" 	indent1
+	" 	indent2
+	" line3
+	" line4
+	" 	indent3
+	" line5
+	" -->>
+	" Output:
+	" line1
+	" line2 "indent1
+	" 	indent2"
+	" line3
+	" line4 "indent3"
+	" line5
+	" 
+	" Explain: surround indented lines with quotes
+	" You need to call it multiple times for each paragraph
+	" Purpose: to convert otl file to relational table file
+	" Assumes: 
+	" all lines except indented ones are left aligned
+	" all left aligned lines start with alphabetical char
+	"
+	/^\s\+
+	s/^\s\+/"/
+	/^\w
+	norm! bA"
+	norm! N
+	join
+	norm! n
+endfunction
+command! SurroundQuotesForIndentedLines call SurroundQuotesForIndentedLines()
+
+function! ConvertTable2Yaml()
+	%s/|/-
+	ConvertTable2Excel
+	%s/\t/  /
+	g/^\w/norm A:
+	%s/\t/,/g
+endfunction
+command! ConvertTable2Yaml call ConvertTable2Yaml()
+
+function! ConvertInlinedTable2Excel()
+	" tüm tablo tek satırda
+	%s/\( \d\+\)/\t\1/g
+	%s/\(\d\+\w\? \)/\1\r/g
+	ConvertExcel2Table
+	%left
+endfunction
+command! ConvertInlinedTable2Excel call ConvertInlinedTable2Excel()
+
+function! ConvertPairLines2Table()
+	%s/\(js\|py\|java\)$/\1\t/
+	g//join
+	ConvertExcel2Table
+	%left
+endfunction
+command! ConvertPairLines2Table call ConvertPairLines2Table()
+
+function! ConvertPairLines2Table2()
+	" birinci satır kelimeyle bitiyor
+	" ikinci satır rakamla başlıyor
+	" diğer kolonlar ikinci satırda sıralanmış
+	g/^ \+\w\+/ s/$/\t/
+	g/^ \+\w\+/join
+	ConvertExcel2Table
+	%left
+endfunction
+command! ConvertPairLines2Table2 call ConvertPairLines2Table2()
+
+function! ConvertLinePerCell2Table()
+	" input:
+	"
+	"Tesis
+	"ID_1
+	"Kalite_Kodu_1
+	"
+	" output:
+	g/^\s*$/d
+	%s/$/\t/
+endfunction
+command! ConvertLinePerCell2Table call ConvertLinePerCell2Table()
+
+function! ConvertRNames2SelectColumns()
+  %s/^[^"]*//
+  %join
+  %s/\s\+/, /g
+  s/"//g
+endfunction
+command! ConvertRNames2SelectColumns call ConvertRNames2SelectColumns()
