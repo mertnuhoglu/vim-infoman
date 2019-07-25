@@ -363,6 +363,9 @@ command! CodePostgreImportFromListOfDataFiles call CodePostgreImportFromListOfDa
 
 " copy location for use in utl.vim url
 function! CopyLocation()
+  " put cursor on this word_x
+  " ->
+  " <url:vim-infoman.vim#word_x>
 	" copy current file
 	let filename = expand("%")
 	" copy word under cursor
@@ -371,9 +374,14 @@ function! CopyLocation()
 	let @* = url
 endfunction
 command! CopyLocation call CopyLocation()
+command! RefWordRelativePath CopyLocation
 
 " copy location with absolute path for use in utl.vim url
 function! CopyLocation2()
+  " put cursor on this word_x
+  " ->
+  " <url:/Users/mertnuhoglu/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#word_x>
+  "
 	" copy current file
 	let filename = expand("%:p")
 	" copy word under cursor
@@ -382,24 +390,31 @@ function! CopyLocation2()
 	let @* = url
 endfunction
 command! CopyLocation2 call CopyLocation2()
+command! RefWord CopyLocation2
                                 
 " copy line with relative path for use in utl.vim url
 function! CopyLineAsUrl()
+  " some text
+  " ->
+	" some text <url:/Users/mertnuhoglu/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#tn=some text>
+  "
 	" copy current file path
 	let filename = expand("%:p")
 	" copy current line 
-	let word = Strip(getline("."))
-	let url = "<url:" . filename . "#tn=" . word . ">"
+	let line = Strip(getline("."))
+	let url = line . " <url:" . filename . "#tn=" . line . ">"
 	let @* = url
+	return url
 endfunction
 command! CopyLineAsUrl call CopyLineAsUrl()
+command! RefLine CopyLineAsUrl
+nnoremap rl :RefLine<cr>
 
 " copy line with id for use in utl.vim url with full path t	- file
 function! CopyRefId()
 	" CopyRefId id=g_00009
-	" some line r=r_00005
-	" >
-	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005>
+  " -->
+  " <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
 	"
 	" copy current file path
 	let filename = expand("%:p")
@@ -413,12 +428,17 @@ function! CopyRefId()
 	" r_00005
 	let result = printf("<url:file:///%s#r=%s>", filename3, id)
 	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005>
+  let @* = result
 	return result
 endfunction
 command! CopyRefId call CopyRefId()
+command! RefId CopyRefId 
 
 function! Strip(input_string)
-    return substitute(a:input_string, '^\\s*\\(.\\{-}\\)\\s*$', '\\1', '')
+  let a0 = substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+	let a1 = substitute(a0, '^#* ', '', '')
+	let a2 = substitute(a1, '`', '', 'g')
+	return a2
 endfunction
 
 " copy location under cursor
@@ -471,7 +491,8 @@ function! Id5()
 		" opt5: make it a function id=g_00009
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
-	call PasteRefLineAsFilePath()
+	PasteRefLineAsFilePath
+	normal yy
 endfunction
 command! Id5 call Id5()
 command! IdG call Id5()
@@ -514,30 +535,66 @@ function! IdR()
 endfunction
 command! IdR call IdR()
 
-function! PasteRefLineAsFilePath()
+function! ReplaceInLineAsFilePath(refid)
+	" wifi connection issues id=g_10099
+	" >
+	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
+	silent! s/id=\w*//
+  "normal "=&a:refid<C-M>p
+  "put =&sessionoptions
+  put =a:refid
+  normal! kJ
+  return a:refid
+endfunction
+function! PasteRefLineAsFilePath() 
 	" wifi connection issues id=g_10099
 	" >
 	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
 	let refid = CopyRefId()
-	normal! ^y$
+	"normal! ^y$
+	let line = Strip(getline("."))
+	let @* = line
 	execute "normal! o\<Tab>"
 	normal! lPyy
-	silent! s/^\(\s\+\)#\+\s*/\1/
-	silent! s/id=\w*//
-	let @* = refid
-	normal! $p
+  call ReplaceInLineAsFilePath(refid)
+	" silent! s/id=\w*//
+	" let @* = refid
+	" normal! $p
 endfunction
 command! PasteRefLineAsFilePath call PasteRefLineAsFilePath()
-command! IdRefpath PasteRefLineAsFilePath 
+command! RefLineId PasteRefLineAsFilePath 
+
+function! PasteRefLineALink() 
+	" Build java modules <a name="build_java_module"></a>
+	" >
+	" [Build java modules](#build_java_module) <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#tn=build_java_module>
+	let filename0 = expand("%:p")
+	let filename = substitute(filename0, '/Users/mertnuhoglu', '\~', '')
+	let line0 = Strip(getline("."))
+	let line1 = substitute(line0, '^\s*["#/]*\s*', '', '')
+	let line = substitute(line1, '\s*<a name=.*>', '', '')
+	let id = substitute(line1, '.*<a name="\(\w\+\)">.*<.a>', '\1', '')
+	let result = printf("[%s](#%s) <url:file:///%s#tn=%s>", line, id, filename, id)
+	let @* = result
+	return result
+endfunction
+command! PasteRefLineALink call PasteRefLineALink()
+command! RefLineA PasteRefLineALink 
 
 command! RemoveUrlTag s#<url:.*/## | s#>## | s#^#@link: # | silent! s#klimka##
 
+if !exists("g:refline")
+  let g:refline = ""
+endif
 function! PasteRefLine()
 	" data innovations online course project  id=dat_011
 	" >
 	" data innovations online course project  <url:#r=dat_011>
 	let @* = CopyRefLine()
+	"let g:refline = CopyRefLine()
 	execute "normal! o\<Tab>"
+	"let @p = g:refline
+	"normal! l"pPyy
 	normal! lPyy
 endfunction
 command! PasteRefLine call PasteRefLine()
@@ -580,6 +637,26 @@ function! IdPair()
 	execute "normal! o\<Tab>\<c-r>*"
 	normal! 's
 	execute "normal! jodone: \<c-r>*"
+endfunction
+command! IdPair call IdPair()
+
+function! IdPairNotWorking()
+	normal! 's
+	Id
+	CopyRefLine
+	execute "normal! o\<Tab>"
+	normal! lP
+	normal! 't
+	execute "normal! o\<Tab>return: "
+	normal! lP
+	normal! k
+	Id
+	CopyRefLine
+	execute "normal! o\<Tab>"
+	normal! lP
+	normal! 's
+	execute "normal! jodone: "
+	normal! lP
 endfunction
 command! IdPair call IdPair()
 
@@ -700,14 +777,17 @@ function! CopyPath()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
+	echom path
 	let @* = path
 endfunction
 command! CopyPath call CopyPath()
 command! Cpp CopyPath
+nnoremap cp :CopyPath<cr>
 function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
 	let path = substitute(path, "^\\(.*\\)", "<url:file://\\1>", "")
+	echom path
 	let @* = path
 endfunction
 command! Cpu call CopyPathu()
@@ -763,9 +843,24 @@ function! Utl3()
 	wincmd l
 	Utl
 endfunction
-nnoremap İ :Utl<CR>
+function! Utl4()
+	vsplit
+	wincmd l
+	Utl
+endfunction
+function! Utl5()
+	normal mP
+	normal mp
+	Utl
+	normal mN
+	normal mn
+endfunction
+nnoremap İ :call Utl5()<CR>
 nnoremap <Leader>is :Utl2<CR>
 nnoremap <Leader>iv :call Utl3()<CR>
+" open in new tab
+" <vimhelp:utl-tutUI>
+nnoremap <Leader>it :Utl openLink underCursor tabe<CR>
 
 " Navigate to prev/next note
 nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -1030,49 +1125,28 @@ function! ConvertYumlFixFormat()
 	silent! g/\s*\[\w*|/ s/\(\w\+\)\s*]/\1; ]/
 
 	" fix attributes
+  " id -> id LONG PK
 	silent! g/\s*\[\w*|/ s#\<id\s*;#id LONG PK;#
+  " entity_id -> entity_id LONG FK
 	silent! g/\s*\[\w*|/ s#_id\s*;#_id LONG FK;#g
+  " point_gisid -> point_gisid LONG FK
 	silent! g/\s*\[\w*|/ s#_gisid\s*;#_gisid LONG FK;#g
+  " VARCHAR -> TEXT
 	silent! g/\s*\[\w*|/ s#\<VARCHAR\>#TEXT#g
+  " NUMBER -> LONG
 	silent! g/\s*\[\w*|/ s#\<NUMBER\>#LONG#g
+  " DOUBLE -> DOUBLE
 	silent! g/\s*\[\w*|/ s#\<DOUBLE\>#DOUBLE#g
+  " objectid -> objectid LONG PK
 	silent! g/\s*\[\w*|/ s#\<objectid\>\s*;#objectid LONG PK;#g
+  " , -> ;
 	silent! g/\s*\[\w*|/ s#,#;#g
+  " | -> | id LONG PK
 	silent! v/\(\<id\>\|_id\>\|\<objectid\>\)/ s#|#| id LONG PK;#
 endfunction
 command! ConvertYumlFixFormat call ConvertYumlFixFormat()
 command! Cyff call ConvertYumlFixFormat()
 
-function! Test4()
-	"norm! mg
-	"normal! 'g
-	"norm! gg
-	"norm! 'g
-	norm! 2jll
-	"norm! dd
-endfunction
-command! Test4 call Test4()
-function! Test3()
-	" remove all non yuml lines
-	"g/[.:#]/d
-	"v/\[[^\]]*\]/d
-
-	"ConvertYumlFixFormat
-
-	"" sorting
-	"sort u
-	"norm! Go
-	norm! mf
-	"g/|/ m $
-	normal! 'f
-	norm! gg
-	norm! 'f
-	norm! dd
-	"norm! "kdG
-	"norm! gg
-	"norm! "kP
-endfunction
-command! Test3 call Test3()
 function! ConvertYumlMarkdown2CleanYuml()  
 	" ConvertYumlMarkdown2CleanYuml()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_10001>
 	" remove all non yuml lines
@@ -1116,30 +1190,6 @@ function! ConvertGithubPage2ProjectList()
 endfunction
 command! ConvertGithubPage2ProjectList call ConvertGithubPage2ProjectList()
 
-function! SurroundMdImage() range
-	exe a:firstline.",".a:lastline."g/\\(\\.jpg\\>\\)\\|\\(\\.png\\)/ s#\\(^\\)\\(.*/\\)\\([^/]\\+\\)\\(\\..*$\\)#![\\3](\\2\\3\\4)#"
-endfunction
-command! -nargs=* -range=% SurroundMdImage <line1>,<line2>call SurroundMdImage()
-
-" convert word -> `word`
-command! SurroundWithDoubleQuotes normal viwS"e
-command! Swdq SurroundWithDoubleQuotes
-command! SurroundWithBackQuotes normal viwS`e
-command! Swq SurroundWithBackQuotes 
-command! SurroundWithBrackets normal viwS]e
-command! Swb SurroundWithBrackets 
-nnoremap <Leader>st :Swq<CR>
-nnoremap <Leader>sb :Swb<CR>
-nnoremap <Leader>sq :Swdq<CR>
-"nnoremap w e
-"nnoremap e w
-"onoremap ie iw
-"onoremap ae aw
-"nnoremap de dw
-"nnoremap dw de
-"nnoremap ce cw
-"nnoremap cw ce
-
 function! ConvertMdUrlsWithSpaces2Escaped()
 	g/^\[\w\+\]:\s*/ s/: /:@@/ | s/ /%20/g | s/:@@/: /
 endfunction
@@ -1182,8 +1232,8 @@ endfunction
 command! CopyUtlAsPath call CopyUtlAsPath()
 
 " csv coloring
-hi CSVColumnEven term=bold ctermbg=0 guibg=DarkGreen
-hi CSVColumnOdd  term=bold ctermbg=17 guibg=DarkBlue
+hi CSVColumnEven term=bold ctermbg=0 guibg=#fbfcfc
+hi CSVColumnOdd  term=bold ctermbg=17 guibg=#e5e7e9
 let g:csv_no_column_highlight = 0
 
 function! CleanRCode()
@@ -1204,10 +1254,6 @@ function! PutRCode2()
 	norm! o msi*mt's'tI# 
 endfunction
 command! Prd call PutRCode2()
-
-function! Test2()
-endfunction
-command! Test2 call Test2()
 
 fun! GetFileLine(fn,ln)
     return readfile(a:fn,'',a:ln)[a:ln-1]
@@ -1580,18 +1626,6 @@ endfunction
 command! ExtractTitleFromUrl call ExtractTitleFromUrl()
 command! ExTitleFromUrl ExtractTitleFromUrl 
 
-function! TestDebug()
-	CopyRefId
-	let url = @*
-	normal! ^y$
-	execute "normal! o\<Tab>"
-	normal! lPyy
-	silent! s/^\(\s\+\)#\+\s*/\1/
-	silent! s/id=\w*//
-	let @* = url
-endfunction
-command! TestDebug call TestDebug()
-
 function! ConvertRmd2HandoutNotes()
 	" remove <div> tags and @annotation tags from Rmd docs to prepare handout notes for end users
 	"
@@ -1710,3 +1744,39 @@ function! ConvertRNames2SelectColumns()
   s/"//g
 endfunction
 command! ConvertRNames2SelectColumns call ConvertRNames2SelectColumns()
+
+function! ExtractFilePaths()
+	norm ggyG
+	split
+	Enew2
+	norm P
+  /[^ "`'()=]*\.\w\{1,3}\>
+  MatchesOnly
+  sort u
+endfunction
+command! ExtractFilePaths call ExtractFilePaths()
+
+function! FixHyperscript()
+  %s/"attributes":/"attrs":/g
+  g/^ *"id": {/norm d3j
+  g/^ *"className": /d
+  %s/`/"/g
+  g/^ *",\?$/d
+endfunction
+command! FixHyperscript call FixHyperscript()
+command! ConvertHyperscriptToCyclejs call FixHyperscript()
+
+function! HandleURL()
+  " https://stackoverflow.com/questions/9458294/open-url-under-cursor-in-vim-with-browser#9459366
+  let s:uri = matchstr(getline("."), '[a-z]*:\/\/[^ >,;]*')
+  echo s:uri
+  if s:uri != ""
+    silent exec "!open '".s:uri."'"
+  else
+    echo "No URI found in line."
+  endif
+endfunction
+map <leader>u :call HandleURL()<cr>
+nnoremap <leader>i :!open -a Safari %<CR><CR>
+
+set history=10000
