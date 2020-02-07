@@ -471,7 +471,7 @@ command! Id call Id()
 
 function! Id3()
 	Id
-	PasteRefLine
+	PasteRefLineAsFilePath
 endfunction
 command! Id3 call Id3()
 command! -range=% IdSwap <line1>,<line2>s/^\\(\\s*\\)\\(\\w\\+[^<]*\\)\\(<.*>\\)/\\1\\3 \\2/
@@ -539,30 +539,32 @@ function! ReplaceInLineAsFilePath(refid)
 	" wifi connection issues id=g_10099
 	" >
 	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
+
+	" wifi connection issues 
 	silent! s/id=\w*//
-  "normal "=&a:refid<C-M>p
-  "put =&sessionoptions
+	" print: <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
   put =a:refid
   normal! kJ
   return a:refid
 endfunction
 function! PasteRefLineAsFilePath() 
-	" wifi connection issues id=g_10099
+	" leiningen konusunu oku id=n_085
 	" >
 	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
-	let refid = CopyRefId()
-	"normal! ^y$
-	let line = Strip(getline("."))
+
+	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
+	let refid = CopyRefId() 
+	" leiningen konusunu oku id=n_085
+	let line = Strip(getline(".")) 
 	let @* = line
-	execute "normal! o\<Tab>"
+	execute "normal! o\<Tab>" 
+	" print: leiningen konusunu oku id=n_085
 	normal! lPyy
   call ReplaceInLineAsFilePath(refid)
-	" silent! s/id=\w*//
-	" let @* = refid
-	" normal! $p
 endfunction
 command! PasteRefLineAsFilePath call PasteRefLineAsFilePath()
 command! RefLineId PasteRefLineAsFilePath 
+command! IdP PasteRefLineAsFilePath 
 
 function! PasteRefLineALink() 
 	" Build java modules <a name="build_java_module"></a>
@@ -590,8 +592,7 @@ function! PasteRefLine()
 	" data innovations online course project  id=dat_011
 	" >
 	" data innovations online course project  <url:#r=dat_011>
-	let @* = CopyRefLine()
-	"let g:refline = CopyRefLine()
+	let @* = CopyRefLineAsPath()
 	execute "normal! o\<Tab>"
 	"let @p = g:refline
 	"normal! l"pPyy
@@ -600,25 +601,28 @@ endfunction
 command! PasteRefLine call PasteRefLine()
 command! IdRefline PasteRefLine 
 
-function! CopyRefLine()
+function! CopyRefLineAsPath()
 	" copies current node with its id properly formatted
-	" install postgre on osx id=r_318
+	"
+	" read io: 
+	" leiningen konusunu oku id=n_085
 	" >
-	" install postgre on osx <url:vim-infoman.vim#r=r_318>
-	normal! "xyy
-	Enew3
-	normal! "xP
-	/id=\w
-	normal! n
-	normal! 2w
-	CopyLocationUnderCursor
-	normal! 2bP
-	normal! ld$
-	normal! ^y$
-	bd
-	return @*
+	" return string: 
+	" leiningen konusunu oku  <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
+
+	" copy current file path
+	let filename = expand("%:p")
+	let filename2 = substitute(filename, '/Users/mertnuhoglu', '\~', '')
+
+	let line = Strip(getline("."))
+	let title = substitute(line, '\s*\(.*\)id=\(\w\+\)', '\1', '')
+	let id = substitute(line, '.*id=\(\w\+\)', '\1', '')
+	let result = printf("%s <url:file:///%s#r=%s>", title, filename2, id)
+	let @r = result
+	let @* = result
+	return result
 endfunction
-command! CopyRefLine call CopyRefLine()
+command! CopyRefLineAsPath call CopyRefLineAsPath()
 
 " return-done bookmarking
 " assumes:
@@ -627,36 +631,16 @@ command! CopyRefLine call CopyRefLine()
 function! IdPair()
 	normal! 's
 	Id
-	CopyRefLine
-	execute "normal! o\<Tab>\<c-r>*"
+	let @r = CopyRefLineAsPath()
+	execute "normal! o\<Tab>\<c-r>r"
 	normal! 't
-	execute "normal! o\<Tab>return: \<c-r>*"
+	execute "normal! o\<Tab>return: \<c-r>r"
 	normal! k
 	Id
-	CopyRefLine
-	execute "normal! o\<Tab>\<c-r>*"
+	let @r = CopyRefLineAsPath()
+	execute "normal! o\<Tab>\<c-r>r"
 	normal! 's
-	execute "normal! jodone: \<c-r>*"
-endfunction
-command! IdPair call IdPair()
-
-function! IdPairNotWorking()
-	normal! 's
-	Id
-	CopyRefLine
-	execute "normal! o\<Tab>"
-	normal! lP
-	normal! 't
-	execute "normal! o\<Tab>return: "
-	normal! lP
-	normal! k
-	Id
-	CopyRefLine
-	execute "normal! o\<Tab>"
-	normal! lP
-	normal! 's
-	execute "normal! jodone: "
-	normal! lP
+	execute "normal! jodone: \<c-r>r"
 endfunction
 command! IdPair call IdPair()
 
@@ -791,6 +775,16 @@ function! CopyPathu()
 	let @* = path
 endfunction
 command! Cpu call CopyPathu()
+function! CopyDirectory()
+	let path = expand("%:p:h")
+	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
+	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
+	echom path
+	let @* = path
+endfunction
+command! CopyDirectory call CopyDirectory()
+command! Cpd CopyDirectory
+nnoremap cd :CopyDirectory<cr>
 
 command! ConvertHomePaths2Tilda silent %s#/Users/mertnuhoglu#\\~#g
 "command! ConvertHomePaths2Tilda %s#/Users/mertnuhoglu#/\\\\~#g
