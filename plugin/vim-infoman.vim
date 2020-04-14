@@ -409,6 +409,7 @@ endfunction
 command! CopyLineAsUrl call CopyLineAsUrl()
 command! RefLine CopyLineAsUrl
 nnoremap rl :RefLine<cr>
+nnoremap <leader>rl :RefLine<cr>
 
 " copy line with id for use in utl.vim url with full path t	- file
 function! CopyRefId()
@@ -474,6 +475,7 @@ function! Id3()
 	PasteRefLineAsFilePath
 endfunction
 command! Id3 call Id3()
+nnoremap <leader>ri :call Id3()<CR>
 command! -range=% IdSwap <line1>,<line2>s/^\\(\\s*\\)\\(\\w\\+[^<]*\\)\\(<.*>\\)/\\1\\3 \\2/
 
 function! Id4()
@@ -643,6 +645,7 @@ function! IdPair()
 	execute "normal! jodone: \<c-r>r"
 endfunction
 command! IdPair call IdPair()
+nnoremap <leader>rp :call IdPair()<CR>
 
 " replace change name
 function! SubstituteNameInBufDo(old_name, new_name)
@@ -757,6 +760,8 @@ command! ConvertEmailRtf2Md call ConvertEmailRtf2Md()
 
 command! CopyFilename let @* = expand("%:t")
 command! Cpf CopyFilename
+nnoremap <leader>cpf :CopyFilename<cr>
+
 function! CopyPath()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
@@ -767,6 +772,7 @@ endfunction
 command! CopyPath call CopyPath()
 command! Cpp CopyPath
 nnoremap cp :CopyPath<cr>
+nnoremap <leader>cp :CopyPath<cr>
 function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
@@ -785,6 +791,7 @@ endfunction
 command! CopyDirectory call CopyDirectory()
 command! Cpd CopyDirectory
 nnoremap cd :CopyDirectory<cr>
+nnoremap <leader>cd :CopyDirectory<cr>
 
 command! ConvertHomePaths2Tilda silent %s#/Users/mertnuhoglu#\\~#g
 "command! ConvertHomePaths2Tilda %s#/Users/mertnuhoglu#/\\\\~#g
@@ -850,11 +857,11 @@ function! Utl5()
 	normal mn
 endfunction
 nnoremap İ :call Utl5()<CR>
-nnoremap <Leader>is :Utl2<CR>
-nnoremap <Leader>iv :call Utl3()<CR>
+nnoremap üis :Utl2<CR>
+nnoremap üiv :call Utl3()<CR>
 " open in new tab
 " <vimhelp:utl-tutUI>
-nnoremap <Leader>it :Utl openLink underCursor tabe<CR>
+nnoremap üit :Utl openLink underCursor tabe<CR>
 
 " Navigate to prev/next note
 nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -1036,7 +1043,7 @@ command! -range=% RemoveDoubleBackSlashes <line1>,<line2>s/\\\\\\\\/\\\\/g
 command! ReplaceSlashWithBackSlashes s/\\\\/\\/g
 command! ReplaceInvisibleSpaces bufdo %s/ / /ge | update
 
-nnoremap <Leader>üo A - opt
+nnoremap üüo A - opt
 
 function! ConvertYuml2Summary()
 	norm! Go## Summary
@@ -1605,8 +1612,12 @@ endfunction
 command! ConvertYoutrackIssueTitles call ConvertYoutrackIssueTitles()
 
 " custom shortcuts 
-nnoremap <Leader>ç :CopyLocation<CR>
-nnoremap <Leader>Ç :CopyLineAsUrl<CR>
+nnoremap üç :CopyLocation<CR>
+nnoremap <leader>üç :CopyLocation<CR>
+nnoremap <leader>rl :CopyLocation<CR>
+nnoremap üÇ :CopyLineAsUrl<CR>
+nnoremap <leader>üÇ :CopyLineAsUrl<CR>
+nnoremap <leader>rL :CopyLineAsUrl<CR>
 
 function! ExtractTitleFromUrl()
 	silent! s#/\s*$##
@@ -1770,7 +1781,7 @@ function! HandleURL()
     echo "No URI found in line."
   endif
 endfunction
-map <leader>u :call HandleURL()<cr>
-nnoremap <leader>i :!open -a Safari %<CR><CR>
+map üu :call HandleURL()<cr>
+nnoremap üi :!open -a Safari %<CR><CR>
 
 set history=10000
