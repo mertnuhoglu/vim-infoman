@@ -762,17 +762,17 @@ command! CopyFilename let @* = expand("%:t")
 command! Cpf CopyFilename
 nnoremap <leader>cpf :CopyFilename<cr>
 
-function! CopyPath()
+function! CopyFilePath()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
 	echom path
 	let @* = path
 endfunction
-command! CopyPath call CopyPath()
-command! Cpp CopyPath
-nnoremap cp :CopyPath<cr>
-nnoremap <leader>cp :CopyPath<cr>
+command! CopyFilePath call CopyFilePath()
+command! Cfp CopyFilePath
+nnoremap cpp :CopyFilePath<cr>
+nnoremap <leader>cpp :CopyFilePath<cr>
 function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
@@ -781,17 +781,17 @@ function! CopyPathu()
 	let @* = path
 endfunction
 command! Cpu call CopyPathu()
-function! CopyDirectory()
+function! CopyDirectoryPath()
 	let path = expand("%:p:h")
 	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
 	echom path
 	let @* = path
 endfunction
-command! CopyDirectory call CopyDirectory()
-command! Cpd CopyDirectory
-nnoremap cd :CopyDirectory<cr>
-nnoremap <leader>cd :CopyDirectory<cr>
+command! CopyDirectoryPath call CopyDirectoryPath()
+command! Cdp CopyDirectoryPath
+nnoremap cpd :CopyDirectoryPath<cr>
+nnoremap <leader>cpd :CopyDirectoryPath<cr>
 
 command! ConvertHomePaths2Tilda silent %s#/Users/mertnuhoglu#\\~#g
 "command! ConvertHomePaths2Tilda %s#/Users/mertnuhoglu#/\\\\~#g
@@ -1177,7 +1177,7 @@ command! CYumlMarkdown2CleanYuml ConvertYumlMarkdown2CleanYuml
 function! ConvertGithubPage2ProjectList()
 	" projects/stuff/text/list_github_projects
 	EnewFile
-	Cpp
+	Cfp
 	w output.txt
 	norm gg2O
 	norm P
@@ -1208,7 +1208,7 @@ function! NewStudy()
 	let date = strftime("%Y%m%d")
 	let filename = 'study_' . name . '_' . date . '.md'
 	exe 'sav ' . filename
-	Cpp
+	Cfp
 	norm gg
 	norm O
 	norm P
@@ -1613,11 +1613,9 @@ command! ConvertYoutrackIssueTitles call ConvertYoutrackIssueTitles()
 
 " custom shortcuts 
 nnoremap üç :CopyLocation<CR>
-nnoremap <leader>üç :CopyLocation<CR>
-nnoremap <leader>rl :CopyLocation<CR>
+nnoremap <leader>rc :CopyLocation<CR>
 nnoremap üÇ :CopyLineAsUrl<CR>
-nnoremap <leader>üÇ :CopyLineAsUrl<CR>
-nnoremap <leader>rL :CopyLineAsUrl<CR>
+nnoremap <leader>rC :CopyLineAsUrl<CR>
 
 function! ExtractTitleFromUrl()
 	silent! s#/\s*$##
