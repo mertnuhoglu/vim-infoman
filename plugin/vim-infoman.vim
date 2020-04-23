@@ -1233,8 +1233,8 @@ endfunction
 command! CopyUtlAsPath call CopyUtlAsPath()
 
 " csv coloring
-hi CSVColumnEven term=bold ctermbg=0 guibg=#fbfcfc
-hi CSVColumnOdd  term=bold ctermbg=17 guibg=#e5e7e9
+hi CSVColumnEven term=bold ctermbg=3 guibg=#000abc
+hi CSVColumnOdd  term=bold ctermbg=10 guibg=#4b1009
 let g:csv_no_column_highlight = 0
 
 function! CleanRCode()
