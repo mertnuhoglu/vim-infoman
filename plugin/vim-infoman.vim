@@ -470,12 +470,6 @@ function! Id()
 endfunction
 command! Id call Id()
 
-function! Id3()
-	Id
-	PasteRefLineAsFilePath
-endfunction
-command! Id3 call Id3()
-nnoremap <leader>ri :call Id3()<CR>
 command! -range=% IdSwap <line1>,<line2>s/^\\(\\s*\\)\\(\\w\\+[^<]*\\)\\(<.*>\\)/\\1\\3 \\2/
 
 function! Id4()
@@ -632,15 +626,17 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 "	mark destination (done place) as d
 function! IdPair()
 	normal! 's
-	Id
-	let @r = CopyRefLineAsPath()
-	execute "normal! o\<Tab>\<c-r>r"
+	IdG
+	let line = Strip(getline(".")) 
+	let @r = line
+	"let @r = CopyRefLineAsPath()
+	"execute "normal! o\<Tab>\<c-r>r"
 	normal! 't
 	execute "normal! o\<Tab>return: \<c-r>r"
 	normal! k
-	Id
-	let @r = CopyRefLineAsPath()
-	execute "normal! o\<Tab>\<c-r>r"
+	IdG
+	let line = Strip(getline(".")) 
+	let @r = line
 	normal! 's
 	execute "normal! jodone: \<c-r>r"
 endfunction
@@ -773,6 +769,7 @@ command! CopyFilePath call CopyFilePath()
 command! Cfp CopyFilePath
 nnoremap cpp :CopyFilePath<cr>
 nnoremap <leader>cpp :CopyFilePath<cr>
+nnoremap <leader>fy :CopyFilePath<cr>
 function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
