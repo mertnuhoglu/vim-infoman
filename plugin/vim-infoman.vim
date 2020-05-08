@@ -488,7 +488,10 @@ function! Id5()
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
 	PasteRefLineAsFilePath
-	normal yy
+	"normal yy
+	let line = Strip(getline(".")) 
+	let @* = line
+	let @t = printf('`%s`', line)
 endfunction
 command! Id5 call Id5()
 command! IdG call Id5()
