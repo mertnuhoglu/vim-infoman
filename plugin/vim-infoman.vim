@@ -1,3 +1,10 @@
+" Basic commands:
+" RefIdNewS = IdG
+" RefIdS = IdP
+" RefLine
+" IdPair
+" En2
+
 command! -bar Enew2 enew | set buftype=nofile
 command! Enew3 split | enew | set buftype=nofile
 command! En2 Enew2 
@@ -362,7 +369,7 @@ endfunction
 command! CodePostgreImportFromListOfDataFiles call CodePostgreImportFromListOfDataFiles()
 
 " copy location for use in utl.vim url
-function! CopyLocation()
+function! RefWord()
   " put cursor on this word_x
   " ->
   " <url:vim-infoman.vim#word_x>
@@ -373,8 +380,8 @@ function! CopyLocation()
 	let url = "<url:" . filename . "#" . word . ">"
 	let @* = url
 endfunction
-command! CopyLocation call CopyLocation()
-command! RefWordRelativePath CopyLocation
+command! RefWord call RefWord()
+command! RefWordRelativePath RefWord
 
 " copy location with absolute path for use in utl.vim url
 function! CopyLocation2()
@@ -393,7 +400,7 @@ command! CopyLocation2 call CopyLocation2()
 command! RefWord CopyLocation2
                                 
 " copy line with relative path for use in utl.vim url
-function! CopyLineAsUrl()
+function! RefLine()
   " some text
   " ->
 	" some text <url:/Users/mertnuhoglu/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#tn=some text>
@@ -406,10 +413,8 @@ function! CopyLineAsUrl()
 	let @* = url
 	return url
 endfunction
-command! CopyLineAsUrl call CopyLineAsUrl()
-command! RefLine CopyLineAsUrl
+command! RefLine call RefLine()
 nnoremap rl :RefLine<cr>
-nnoremap <leader>rl :RefLine<cr>
 
 " copy line with id for use in utl.vim url with full path t	- file
 function! CopyRefId()
@@ -433,7 +438,7 @@ function! CopyRefId()
 	return result
 endfunction
 command! CopyRefId call CopyRefId()
-command! RefId CopyRefId 
+" command! RefId CopyRefId 
 
 function! Strip(input_string)
   let a0 = substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
@@ -478,7 +483,7 @@ function! Id4()
 endfunction
 command! Id4 call Id4()
 
-function! Id5()
+function! RefIdNewS()
 	" global ID
 	"
 	" input:
@@ -487,14 +492,14 @@ function! Id5()
 		" opt5: make it a function id=g_00009
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
-	PasteRefLineAsFilePath
+	RefIdS
 	"normal yy
 	let line = Strip(getline(".")) 
 	let @* = line
 	let @t = printf('`%s`', line)
 endfunction
-command! Id5 call Id5()
-command! IdG call Id5()
+command! RefIdNewS call RefIdNewS()
+"command! IdG call RefIdNewS()
 
 function! Id7()
 	" lokal id already exists use it as global ID
@@ -503,7 +508,7 @@ function! Id7()
 		" opt5: make it a function id=g_00009
 	" output:
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
-	call PasteRefLineAsFilePath()
+	call RefIdS()
 endfunction
 command! Id7 call Id7()
 command! IdX call Id7()
@@ -514,7 +519,7 @@ function! Id6()
 	" output:
 		" opt5: make it a function id=g_00009
 		" @link: # opt5: make it a function study_trycatch.R#r=g_00009
-	Id5
+	RefIdNewS
 	RemoveUrlTag
 	left 2
 endfunction
@@ -530,7 +535,7 @@ function! IdR()
 		" # update_new_fields = function() { <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#r=g_0009>
 	norm! A # 
 	PutGlobalId
-	call PasteRefLineAsFilePath()
+	call RefIdS()
 endfunction
 command! IdR call IdR()
 
@@ -546,7 +551,7 @@ function! ReplaceInLineAsFilePath(refid)
   normal! kJ
   return a:refid
 endfunction
-function! PasteRefLineAsFilePath() 
+function! RefId() 
 	" leiningen konusunu oku id=n_085
 	" >
 	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
@@ -560,10 +565,21 @@ function! PasteRefLineAsFilePath()
 	" print: leiningen konusunu oku id=n_085
 	normal! lPyy
   call ReplaceInLineAsFilePath(refid)
+	let line = Strip(getline(".")) 
+	let @t = printf('`%s`', line)
 endfunction
-command! PasteRefLineAsFilePath call PasteRefLineAsFilePath()
-command! RefLineId PasteRefLineAsFilePath 
-command! IdP PasteRefLineAsFilePath 
+command! RefIdS call RefIdS()
+"command! IdP RefIdS 
+function! RefId() 
+	" leiningen konusunu oku id=n_085
+	" >
+	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
+
+	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
+	RefIdS
+	norm ddk
+endfunction
+command! RefId call RefId()
 
 function! PasteRefLineALink() 
 	" Build java modules <a name="build_java_module"></a>
@@ -629,7 +645,7 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 "	mark destination (done place) as d
 function! IdPair()
 	normal! 's
-	IdG
+	RefIdNewS
 	let line = Strip(getline(".")) 
 	let @r = line
 	"let @r = CopyRefLineAsPath()
@@ -637,14 +653,13 @@ function! IdPair()
 	normal! 't
 	execute "normal! o\<Tab>return: \<c-r>r"
 	normal! k
-	IdG
+	RefIdNewS
 	let line = Strip(getline(".")) 
 	let @r = line
 	normal! 's
 	execute "normal! jodone: \<c-r>r"
 endfunction
 command! IdPair call IdPair()
-nnoremap <leader>rp :call IdPair()<CR>
 
 " replace change name
 function! SubstituteNameInBufDo(old_name, new_name)
@@ -681,7 +696,7 @@ function! Y()
 	normal! "xyy
 	Enew3
 	normal! "xP
-	CopyLineAsUrl
+	RefLine
 	normal! 2bP
 	normal! ld$
 	normal! ^y$
@@ -759,7 +774,6 @@ command! ConvertEmailRtf2Md call ConvertEmailRtf2Md()
 
 command! CopyFilename let @* = expand("%:t")
 command! Cpf CopyFilename
-nnoremap <leader>cpf :CopyFilename<cr>
 
 function! CopyFilePath()
 	let path = expand("%:p")
@@ -771,8 +785,6 @@ endfunction
 command! CopyFilePath call CopyFilePath()
 command! Cfp CopyFilePath
 nnoremap cpp :CopyFilePath<cr>
-nnoremap <leader>cpp :CopyFilePath<cr>
-nnoremap <leader>fy :CopyFilePath<cr>
 function! CopyPathu()
 	let path = expand("%:p")
 	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
@@ -791,7 +803,6 @@ endfunction
 command! CopyDirectoryPath call CopyDirectoryPath()
 command! Cdp CopyDirectoryPath
 nnoremap cpd :CopyDirectoryPath<cr>
-nnoremap <leader>cpd :CopyDirectoryPath<cr>
 
 command! ConvertHomePaths2Tilda silent %s#/Users/mertnuhoglu#\\~#g
 "command! ConvertHomePaths2Tilda %s#/Users/mertnuhoglu#/\\\\~#g
@@ -1611,12 +1622,6 @@ function! ConvertYoutrackIssueTitles()
 endfunction
 command! ConvertYoutrackIssueTitles call ConvertYoutrackIssueTitles()
 
-" custom shortcuts 
-nnoremap üç :CopyLocation<CR>
-nnoremap <leader>rc :CopyLocation<CR>
-nnoremap üÇ :CopyLineAsUrl<CR>
-nnoremap <leader>rC :CopyLineAsUrl<CR>
-
 function! ExtractTitleFromUrl()
 	silent! s#/\s*$##
 	norm! $F/l"ty$>>
@@ -1783,3 +1788,17 @@ map üu :call HandleURL()<cr>
 nnoremap üi :!open -a Safari %<CR><CR>
 
 set history=10000
+
+": spacemacs compatible keybindings for reference management id=g_11006 {{{ 
+nnoremap <leader>cpf :CopyFilename<cr>
+nnoremap <leader>cpp :CopyFilePath<cr>
+nnoremap <leader>fy :CopyFilePath<cr>
+nnoremap <leader>cpd :CopyDirectoryPath<cr>
+
+nnoremap <leader>rl :RefLine<cr>
+nnoremap <leader>ri :RefId<cr>
+nnoremap <leader>rI :RefIdS<cr>
+nnoremap <leader>rN :RefIdNewS<cr>
+nnoremap <leader>rw :RefWord<CR>
+nnoremap <leader>rp :call IdPair()<CR>
+": }}}
