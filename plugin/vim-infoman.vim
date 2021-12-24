@@ -1,3 +1,4 @@
+" vim:fileencoding=utf-8:ft=vim:foldmethod=marker
 " Basic commands:
 " RefIdNewS = IdG
 " RefIdS = IdP
@@ -417,8 +418,8 @@ command! RefLine call RefLine()
 nnoremap rl :RefLine<cr>
 
 " copy line with id for use in utl.vim url with full path t	- file
-function! CopyRefId()
-	" CopyRefId id=g_00009
+function! CopyUrl()
+	" CopyUrl id=g_00009
   " -->
   " <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
 	"
@@ -432,13 +433,17 @@ function! CopyRefId()
 	"		# id=r_00005
 	let id = substitute(line, '.*id=\(\w\+\)', '\1', '')
 	" r_00005
-	let result = printf("<url:file:///%s#r=%s>", filename3, id)
+	let url = printf("%s#r=%s", filename3, id)
+	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005
+	let @u = url
+	let result = printf("<url:file:///%s>", url)
 	" <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005>
   let @* = result
 	return result
 endfunction
-command! CopyRefId call CopyRefId()
-" command! RefId CopyRefId 
+command! CopyUrl call CopyUrl()
+command! CopyRefId call CopyUrl()
+" command! RefId CopyUrl 
 
 function! Strip(input_string)
   let a0 = substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
@@ -479,7 +484,7 @@ command! -range=% IdSwap <line1>,<line2>s/^\\(\\s*\\)\\(\\w\\+[^<]*\\)\\(<.*>\\)
 
 function! Id4()
 	PutGlobalId
-	let @* = CopyRefId()
+	let @* = CopyUrl()
 endfunction
 command! Id4 call Id4()
 
@@ -492,7 +497,7 @@ function! RefIdNewS()
 		" opt5: make it a function id=g_00009
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
-	RefIdS
+	RefIdS0
 	"normal yy
 	let line = Strip(getline(".")) 
 	let @* = line
@@ -500,18 +505,6 @@ function! RefIdNewS()
 endfunction
 command! RefIdNewS call RefIdNewS()
 "command! IdG call RefIdNewS()
-
-function! Id7()
-	" lokal id already exists use it as global ID
-	"
-	" input:
-		" opt5: make it a function id=g_00009
-	" output:
-		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
-	call RefIdS()
-endfunction
-command! Id7 call Id7()
-command! IdX call Id7()
 
 function! Id6()
 	" input:
@@ -535,51 +528,79 @@ function! IdR()
 		" # update_new_fields = function() { <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#r=g_0009>
 	norm! A # 
 	PutGlobalId
-	call RefIdS()
+	call RefIdS0()
 endfunction
 command! IdR call IdR()
 
-function! ReplaceInLineAsFilePath(refid)
-	" wifi connection issues id=g_10099
-	" >
-	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
+function! ReplaceId2Url(line, url)
+  " line: wifi connection issues id=g_10099
+  " url: <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=n_085>
+	" ->
+	" wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=n_085>
+
+  let line2 = substitute(a:line, 'id=\w*', a:url, '')
+	" wifi connection issues 
+  return line2
+endfunction
+
+function! ReplaceInLineAsFilePath(url)
+  " input:
+	"   wifi connection issues id=g_10099
+  " out:
+  "   wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
 	" wifi connection issues 
 	silent! s/id=\w*//
 	" print: <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
-  put =a:refid
+  put =a:url
   normal! kJ
-  return a:refid
+  return a:url
 endfunction
-function! RefId() 
+
+function! RefIdS0() 
+  " input:
+	"   wifi connection issues id=g_10099
+  " out:
+  "   wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
+
+	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
+
+	let url = CopyUrl() 
+  "> <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
+
+	let line = Strip(getline(".")) 
+  "> wifi connection issues id=g_10099
+
+  let line2 = ReplaceId2Url(line, url)
+  "> wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
+
+	let @t = printf('`%s`', line2)
+	let @r = line2
+  let @* = line2
+	return line2
+endfunction
+command! RefIdS0 call RefIdS0()
+
+function! RefIdSDeprecated() 
 	" leiningen konusunu oku id=n_085
 	" >
 	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
 
 	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
-	let refid = CopyRefId() 
+	let url = CopyUrl() 
 	" leiningen konusunu oku id=n_085
 	let line = Strip(getline(".")) 
-	let @* = line
+	let @r = line
 	execute "normal! o\<Tab>" 
 	" print: leiningen konusunu oku id=n_085
-	normal! lPyy
-  call ReplaceInLineAsFilePath(refid)
+	normal! l"rPyy
+  call ReplaceInLineAsFilePath(url)
 	let line = Strip(getline(".")) 
 	let @t = printf('`%s`', line)
+	return line
 endfunction
-command! RefIdS call RefIdS()
-"command! IdP RefIdS 
-function! RefId() 
-	" leiningen konusunu oku id=n_085
-	" >
-	" wifi connection issues <url:file:///~/Dropbox/mynotes/code/cosx/cosx.md#r=g_10099>
-
-	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
-	RefIdS
-	norm ddk
-endfunction
-command! RefId call RefId()
+command! RefIdS call RefIdS0()
+command! RefId call RefIdS0()
 
 function! PasteRefLineALink() 
 	" Build java modules <a name="build_java_module"></a>
@@ -775,28 +796,49 @@ command! ConvertEmailRtf2Md call ConvertEmailRtf2Md()
 command! CopyFilename let @* = expand("%:t")
 command! Cpf CopyFilename
 
-function! CopyFilePath()
+function! CopyFilePath2()
 	let path = expand("%:p")
-	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
 	echom path
 	let @* = path
+	return path
+endfunction
+command! CopyFilePath2 call CopyFilePath2()
+function! CopyFilePath()
+	let path = CopyFilePath2()
+	let is_space_exists = matchstr(path, " ")
+	if empty(is_space_exists)
+		let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
+	endif
+	echom path
+	let @* = path
+	return path
 endfunction
 command! CopyFilePath call CopyFilePath()
 command! Cfp CopyFilePath
 nnoremap cpp :CopyFilePath<cr>
-function! CopyPathu()
+function! CopyPathUrl()
 	let path = expand("%:p")
-	let path = substitute(path, "/Users/mertnuhoglu", "\/\\~", "")
 	let path = substitute(path, "^\\(.*\\)", "<url:file://\\1>", "")
+	let is_space_exists = matchstr(path, " ")
+	if empty(is_space_exists)
+		let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
+	endif
 	echom path
 	let @* = path
 endfunction
-command! Cpu call CopyPathu()
+command! CopyPathUrl call CopyPathUrl()
+command! Cpu CopyPathUrl<cr>
 function! CopyDirectoryPath()
 	let path = expand("%:p:h")
-	let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
+	let path = substitute(path, "dcwater - Documents", "dcwater", "")
+	let path = substitute(path, "TQM - Belgeler", "tqm", "")
+	let path = substitute(path, "LAYERMARK - Belgeler", "layermark", "")
+	let is_space_exists = matchstr(path, " ")
+	if empty(is_space_exists)
+		let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
+	endif
 	echom path
 	let @* = path
 endfunction
@@ -844,22 +886,35 @@ command! SqueezeMultipleBlankLines RemoveMultipleBlankLines
 command! -range=% Smbl <line1>,<line2>call s:RemoveMultipleBlankLines3()
 command! -range=% RemoveMultipleBlankLines2 <line1>,<line2>g/^\\s*$/,/./-j
 
+function! s:ConvertLineEndingsIntoNewlines() range
+	exe a:firstline.",".a:lastline."s/$/\\r/"
+	RemoveMultipleBlankLines
+endfunction
+
+command! -range=% ConvertLineEndingsIntoNewlines <line1>,<line2>call s:ConvertLineEndingsIntoNewlines()
+
+nnoremap İ :Utl<CR>
+
 function! Utl2()
 	split
 	wincmd j
 	Utl
 endfunction
 command! Utl2 call Utl2()
+
 function! Utl3()
 	vsplit
 	wincmd l
 	Utl
 endfunction
+command! Utl3 :call Utl3()
+
 function! Utl4()
 	vsplit
 	wincmd l
 	Utl
 endfunction
+
 function! Utl5()
 	normal mP
 	normal mp
@@ -867,12 +922,13 @@ function! Utl5()
 	normal mN
 	normal mn
 endfunction
-nnoremap İ :call Utl5()<CR>
+
 nnoremap üis :Utl2<CR>
 nnoremap üiv :call Utl3()<CR>
 " open in new tab
 " <vimhelp:utl-tutUI>
-nnoremap üit :Utl openLink underCursor tabe<CR>
+command! UtlTab :Utl openLink underCursor tabe
+nnoremap üit :UtlTab<CR>
 
 " Navigate to prev/next note
 nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -1044,6 +1100,7 @@ command! -range ConvertTabbedWords2QuotedArray <line1>,<line2>call ConvertTabbed
 command! -range=% SurroundCSVWithQuotes <line1>,<line2>s/\\(^\\|, \\)\\?\\([^,]*\\)/\\1'\\2'/g
 command! -range=% SurroundWordsWithDQuotes <line1>,<line2>s/\\<\\w\\+\\>/"\\0"/g
 command! -range=% SurroundWordsWithQuotes <line1>,<line2>s/\\<\\w\\+\\>/'\\0'/g
+command! -range=% SurroundWordsWithQuotes2 <line1>,<line2>s/\<\w\+\>/'\\0'/g
 command! -range=% SurroundLinesWithQuotes <line1>,<line2>s/.*/'\\0'/
 command! RemoveLinesStartingWithNumbers g/^\\d/d
 command! RemoveROutputVectorIndexes %s/^ *\\[\\d*\\] //
@@ -1207,8 +1264,7 @@ function! ConvertMdUrlsWithSpaces2Escaped()
 endfunction
 comman! ConvertMdUrlsWithSpaces2Escaped call ConvertMdUrlsWithSpaces2Escaped()
 
-let $study = '~/Dropbox/projects/study'
-command! CdStudy cd $study
+let $study = '~/projects/study'
 function! NewStudy()
 	split
 	CdStudy
@@ -1281,7 +1337,7 @@ function! PutGlobalId()
 	let new_id = printf("%05d", id)
 	let line2 = [new_id]
 	call writefile(line2, global_refid, '')
-	let @r = printf("id=g_%s", new_id)
+	let @r = printf("id=g%s", new_id)
 	normal! $A 
 	normal! "rp
 endfunction
@@ -1566,7 +1622,7 @@ endfunction
 
 function! PutHistory()
     redir @a>
-    history : -10,
+    history : -20,
     redir END
     norm "ap
 endfunction
@@ -1790,15 +1846,14 @@ nnoremap üi :!open -a Safari %<CR><CR>
 set history=10000
 
 ": spacemacs compatible keybindings for reference management id=g_11006 {{{ 
-nnoremap <leader>cpf :CopyFilename<cr>
-nnoremap <leader>cpp :CopyFilePath<cr>
-nnoremap <leader>fy :CopyFilePath<cr>
-nnoremap <leader>cpd :CopyDirectoryPath<cr>
+"nnoremap <leader>cpf :CopyFilename<cr>
+"nnoremap <leader>cpp :CopyFilePath<cr>
+"nnoremap <leader>cpu :CopyPathUrl<cr>
+"nnoremap <leader>cpd :CopyDirectoryPath<cr>
+"nnoremap <leader>fn :CopyFilename<cr>
+"nnoremap <leader>fu :CopyPathUrl<cr>
+"nnoremap <leader>fy :CopyFilePath<cr>
+"nnoremap <leader>fp :CopyDirectoryPath<cr>
 
-nnoremap <leader>rl :RefLine<cr>
-nnoremap <leader>ri :RefId<cr>
-nnoremap <leader>rI :RefIdS<cr>
-nnoremap <leader>rN :RefIdNewS<cr>
-nnoremap <leader>rw :RefWord<CR>
-nnoremap <leader>rp :call IdPair()<CR>
 ": }}}
+
