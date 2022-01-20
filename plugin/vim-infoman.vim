@@ -1,9 +1,11 @@
 " vim:fileencoding=utf-8:ft=vim:foldmethod=marker
 " Basic commands:
-" RefIdNewS = IdG
+" function! RefId()  <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12680>
+" function! IdPair() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12688>
+" CopyUrl <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
+" function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
 " RefIdS = IdP
 " RefLine
-" IdPair
 " En2
 
 command! -bar Enew2 enew | set buftype=nofile
@@ -431,7 +433,7 @@ function! CopyUrl()
 	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
 	let line = Strip(getline("."))
 	"		# id=r_00005
-	let id = substitute(line, '.*id=\(\w\+\)', '\1', '')
+	let id = substitute(line, '.*id=\(\w\+\):\?', '\1', '')
 	" r_00005
 	let url = printf("%s#r=%s", filename3, id)
 	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005
@@ -446,7 +448,7 @@ command! CopyRefId call CopyUrl()
 " command! RefId CopyUrl 
 
 function! Strip(input_string)
-  let a0 = substitute(a:input_string, '^\s*\(.\{-}\)\s*$', '\1', '')
+  let a0 = substitute(a:input_string, '^\_s*\(.\{-}\)\_s*$', '\1', '')
 	let a1 = substitute(a0, '^#* ', '', '')
 	let a2 = substitute(a1, '`', '', 'g')
 	return a2
@@ -488,6 +490,7 @@ function! Id4()
 endfunction
 command! Id4 call Id4()
 
+" function! RefIdNewS() id=g12690
 function! RefIdNewS()
 	" global ID
 	"
@@ -497,11 +500,8 @@ function! RefIdNewS()
 		" opt5: make it a function id=g_00009
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
-	RefIdS0
-	"normal yy
-	let line = Strip(getline(".")) 
-	let @* = line
-	let @t = printf('`%s`', line)
+	let line = RefId()
+  return line
 endfunction
 command! RefIdNewS call RefIdNewS()
 "command! IdG call RefIdNewS()
@@ -528,7 +528,7 @@ function! IdR()
 		" # update_new_fields = function() { <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#r=g_0009>
 	norm! A # 
 	PutGlobalId
-	call RefIdS0()
+	call RefId()
 endfunction
 command! IdR call IdR()
 
@@ -557,7 +557,8 @@ function! ReplaceInLineAsFilePath(url)
   return a:url
 endfunction
 
-function! RefIdS0() 
+" function! RefId()  id=g12680
+function! RefId()
   " input:
 	"   wifi connection issues id=g_10099
   " out:
@@ -569,17 +570,18 @@ function! RefIdS0()
   "> <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
 
 	let line = Strip(getline(".")) 
+	let line2 = substitute(line, ':\?\s*$', '\1', '')
   "> wifi connection issues id=g_10099
 
-  let line2 = ReplaceId2Url(line, url)
+  let line3 = ReplaceId2Url(line2, url) . "\n"
   "> wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
-	let @t = printf('`%s`', line2)
-	let @r = line2
-  let @* = line2
-	return line2
+	let @t = printf('`%s`', line3)
+	let @r = line3
+  let @* = line3
+	return line3
 endfunction
-command! RefIdS0 call RefIdS0()
+command! RefId call RefId()
 
 function! RefIdSDeprecated() 
 	" leiningen konusunu oku id=n_085
@@ -590,17 +592,19 @@ function! RefIdSDeprecated()
 	let url = CopyUrl() 
 	" leiningen konusunu oku id=n_085
 	let line = Strip(getline(".")) 
+	let line = substitute(line, ':\?\s*$', '\1', '')
 	let @r = line
 	execute "normal! o\<Tab>" 
 	" print: leiningen konusunu oku id=n_085
 	normal! l"rPyy
   call ReplaceInLineAsFilePath(url)
 	let line = Strip(getline(".")) 
+	let line = substitute(line, ':\?\s*$', '\1', '')
 	let @t = printf('`%s`', line)
 	return line
 endfunction
-command! RefIdS call RefIdS0()
-command! RefId call RefIdS0()
+command! RefIdS call RefId()
+command! RefId call RefId()
 
 function! PasteRefLineALink() 
 	" Build java modules <a name="build_java_module"></a>
@@ -664,21 +668,16 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 " assumes:
 "	mark source (return place) as s
 "	mark destination (done place) as d
+" function! IdPair() id=g12688
 function! IdPair()
 	normal! 's
-	RefIdNewS
-	let line = Strip(getline(".")) 
-	let @r = line
-	"let @r = CopyRefLineAsPath()
-	"execute "normal! o\<Tab>\<c-r>r"
+	let line = trim(RefIdNewS())
 	normal! 't
-	execute "normal! o\<Tab>return: \<c-r>r"
-	normal! k
-	RefIdNewS
-	let line = Strip(getline(".")) 
-	let @r = line
+	execute "normal! o\<Tab>return: " . line . "\<Esc>"
+	normal! 't
+	let line = trim(RefIdNewS())
 	normal! 's
-	execute "normal! jodone: \<c-r>r"
+	execute "normal! o\<Tab>done: " . line . "\<Esc>"
 endfunction
 command! IdPair call IdPair()
 
