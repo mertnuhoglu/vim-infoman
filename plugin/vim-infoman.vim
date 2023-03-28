@@ -1,9 +1,10 @@
 " vim:fileencoding=utf-8:ft=vim:foldmethod=marker
 " Basic commands:
 " function! RefId()  <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12680>
-" function! IdPair() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12688>
+" SPC rp function! IdPair() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12688>
 " CopyUrl <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
-" function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
+" SPC rn function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
+" SPC rj function! RefIdJournal()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g13761>
 " RefIdS = IdP
 " RefLine
 " En2
@@ -409,10 +410,14 @@ function! RefLine()
 	" some text <url:/Users/mertnuhoglu/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#tn=some text>
   "
 	" copy current file path
-	let filename = expand("%:p")
+	let path = expand("%:p")
+	" /Users/mertnuhoglu/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
+	let path = substitute(path, '/Users/mertnuhoglu', '\~', '')
+	let path = substitute(path, ' (Personal)', '', '')
+  let path = substitute(path, "Library/CloudStorage/GoogleDrive-mert.nuhoglu@gmail.com/My Drive/", "gdrive/", "")
 	" copy current line 
-	let line = Strip(getline("."))
-	let url = line . " <url:" . filename . "#tn=" . line . ">"
+	let line = Strip2(getline("."))
+	let url = line . " <url:" . path . "#tn=" . line . ">"
 	let @* = url
 	return url
 endfunction
@@ -426,16 +431,17 @@ function! CopyUrl()
   " <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
 	"
 	" copy current file path
-	let filename = expand("%:p")
+	let path = expand("%:p")
 	" /Users/mertnuhoglu/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
-	let filename2 = substitute(filename, '/Users/mertnuhoglu', '\~', '')
-	let filename3 = substitute(filename2, ' (Personal)', '', '')
+	let path = substitute(path, '/Users/mertnuhoglu', '\~', '')
+	let path = substitute(path, ' (Personal)', '', '')
+  let path = substitute(path, "Library/CloudStorage/GoogleDrive-mert.nuhoglu@gmail.com/My Drive/", "gdrive/", "")
 	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R
 	let line = Strip(getline("."))
 	"		# id=r_00005
-	let id = substitute(line, '.*id=\(\w\+\):\?', '\1', '')
+	let id = substitute(line, '.*id=\(\w\+\):\?.*', '\1', '')
 	" r_00005
-	let url = printf("%s#r=%s", filename3, id)
+	let url = printf("%s#r=%s", path, id)
 	" ~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_nested_processes.R#r=r_00005
 	let @u = url
 	let result = printf("<url:file:///%s>", url)
@@ -447,11 +453,17 @@ command! CopyUrl call CopyUrl()
 command! CopyRefId call CopyUrl()
 " command! RefId CopyUrl 
 
-function! Strip(input_string)
+function! Strip2(input_string)
   let a0 = substitute(a:input_string, '^\_s*\(.\{-}\)\_s*$', '\1', '')
 	let a1 = substitute(a0, '^#* ', '', '')
 	let a2 = substitute(a1, '`', '', 'g')
 	return a2
+endfunction
+
+function! Strip(input_string)
+  let a2 = Strip2(a:input_string)
+	let a3 = substitute(a2, ':\s*$', '', 'g')
+	return a3
 endfunction
 
 " copy location under cursor
@@ -501,6 +513,7 @@ function! RefIdNewS()
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
 	let line = RefId()
+	" let line = RefIdJournal()
   return line
 endfunction
 command! RefIdNewS call RefIdNewS()
@@ -557,8 +570,7 @@ function! ReplaceInLineAsFilePath(url)
   return a:url
 endfunction
 
-" function! RefId()  id=g12680
-function! RefId()
+function! RefId()  " id=g12680
   " input:
 	"   wifi connection issues id=g_10099
   " out:
@@ -569,19 +581,113 @@ function! RefId()
 	let url = CopyUrl() 
   "> <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
 
-	let line = Strip(getline(".")) 
-	let line2 = substitute(line, ':\?\s*$', '\1', '')
+	let line01 = Strip(getline(".")) 
+	let line02 = substitute(line01, ':\?\s*$', '\1', '')
   "> wifi connection issues id=g_10099
 
-  let line3 = ReplaceId2Url(line2, url) . "\n"
+  let line03 = ReplaceId2Url(line02, url) . "\n"
   "> wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
-	let @t = printf('`%s`', line3)
-	let @r = line3
-  let @* = line3
-	return line3
+  " remove `{{{` at end such as:
+  " <url:file:///~/projects/vim_repos/my-vim-custom/plugin/my-vim-custom.vim#r=g12847 {{{> {{{
+  let line04 = substitute(line03, '\s*{{{\s*', '', 'g')
+
+  " remove `#tag` at end such as:
+  " Debug: Portal çalıştırma <url:file:///~/prj/myrepo/work/work4.otl#r=g13646> #clj
+  let line05 = substitute(line04, '\(\s*#\w\+\)*\s*$', '', 'g')
+
+  " remove `": ` at start such as:
+  ": conjure <url:file:///~/projects/vim_repos/my-vim-custom/plugin/my-vim-custom.vim#r=g12847>
+  let line06 = substitute(line05, '^": *', '', '')
+  let line07 = substitute(line06, '^ *-\+ *#* *', '', '')
+
+  " md linklerini temizle:
+  " input:
+  " [replikativ / datahike-invoice](https://gitlab.com/replikativ/datahike-invoice) <url:file:///~/projects/study/clj/clojure.otl#r=g13032>
+  " output:
+  " replikativ / datahike-invoice <url:file:///~/projects/study/clj/clojure.otl#r=g13032>
+  let line08 = substitute(line07, '\[\(.*\)\](.*)\s*\(<url:file.*>\)', '\1 \2', '')
+
+	let @t = printf('`%s`', line08)
+	let @r = line08
+  let @* = line08
+	return line08
 endfunction
 command! RefId call RefId()
+
+function! RefIdJournal()  " SPC rj id=g13761
+  " Logseq Journal uyumlu vim rfr linki oluşturma
+  "
+  " input:
+	"   wifi connection issues id=g_10099
+  "   # ShadowCljs:-IntelliJ-ile-REPL-Baglantisi id=g13764
+  " out:
+  "   [[wifi connection issues]] <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
+
+  let rfr01 = RefId()
+
+  " baştaki "-;# gibi sembolleri sil
+  let rfr02 = substitute(rfr01, '^\s*[-;#":>]*', '', '')
+  " ShadowCljs:-IntelliJ-ile-REPL-Baglantisi <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
+  " etrafına [[..]] koy
+  let rfr03 = substitute(rfr02, '^\(\s*\)\([^<]*\)\s\+\(.*\)', '\1[[\2]] \3', '')
+  " [[ShadowCljs:-IntelliJ-ile-REPL-Baglantisi]] <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
+  " sadece [[..]] kalsın
+  let rfr04 = substitute(rfr03, ' <url.file.*', '', '')
+  " let rfr04 = substitute(rfr03, '^\(\s*\)\([^<]*\)', 'x\2x', '')
+  " let rfr02 = substitute(rfr01, '^\(\s*\[-;#"\]\+\s*\)\(\[^<\]\+\)', '\1[[\2]]', '')
+  " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)', 'x\1x', '')
+  " let rfr02 = substitute(rfr01, '^\(\s*"\+\s*\)', '\1', '')
+  " let rfr02 = substitute(rfr01, '"', '', '')
+  " let rfr02 = substitute(rfr01, '^\(\s*"\)', '\1', '')
+  " let rfr02 = substitute(rfr01, '^\("\)', '\1', '')
+  " let rfr02 = substitute(rfr01, '\("\)', '\1', '')
+  " let rfr02 = substitute(rfr01, '"', '', '') " +
+  " let rfr02 = substitute(rfr01, '\("\)', '', '') " +
+  " let rfr02 = substitute(rfr01, '\("\)', '\1', '') " -
+  " let rfr02 = substitute(rfr01, '"', '\1', '') " +
+  " let rfr02 = substitute(rfr01, '(")', '\1', '') " -
+  " let rfr02 = substitute(rfr01, '^\(\s*"\)', '', '') "+
+  " let rfr02 = substitute(rfr01, '\(wifi\)', '', '') "+
+  " let rfr02 = substitute(rfr01, '\(wifi\)', '\1', '') "+
+  " let rfr02 = substitute(rfr01, '\(wifi\)', 'x\1x', '') "+
+  " let rfr02 = substitute(rfr01, '\("\)', 'x\1x', '') "+
+  " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)\(\[^<\]\+\)', 'x\1x', '')  " -
+  " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)\(.*\)', 'x\1x\2', '')
+  let rfr05 = substitute(rfr04, '.*', 'Bağlamı: \0', '')
+	let @t = printf('`%s`', rfr03)
+	let @p = rfr02  " plain old style
+  let @* = rfr03  " standard    [[..]] <url..>
+	let @r = rfr04  " rfr         [[..]]
+	let @b = rfr05  " rfr         [[..]]
+	return rfr03
+endfunction
+command! RefIdJournal call RefIdJournal()
+
+function! RefIdJournalFromAnywhere()  " SPC rb  id=g13901
+  " Dosyanın herhangi bir yerindeyken: RefIdJournal() çağırma
+  "
+  normal! mz
+  normal! gg
+  /^#\+ 202\d\+-.*id=\w\+\s*$
+  let result = RefIdJournal()
+  normal! 'z
+  return result
+endfunction
+command! RefIdJournalFromAnywhere call RefIdJournalFromAnywhere()
+
+function! RefIdJournalFromAnywhere2()  " 
+  " RefIdJournalFromAnywhere gibi, tek farkı:
+  " Başlıkta 20230326 şeklinde tarih olması kısıtı yok
+  "
+  normal! mz
+  normal! gg
+  /^#\+ \w\+-\?.*id=\w\+\s*$
+  let result = RefIdJournal()
+  normal! 'z
+  return result
+endfunction
+command! RefIdJournalFromAnywhere2 call RefIdJournalFromAnywhere2()
 
 function! RefIdSDeprecated() 
 	" leiningen konusunu oku id=n_085
@@ -670,6 +776,7 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 "	mark destination (done place) as d
 " function! IdPair() id=g12688
 function! IdPair()
+  normal! mt
 	normal! 's
 	let line = trim(RefIdNewS())
 	normal! 't
@@ -798,11 +905,14 @@ command! Cpf CopyFilename
 function! CopyFilePath2()
 	let path = expand("%:p")
 	let path = substitute(path, "Dropbox (Personal)", "Dropbox", "")
+  let path = substitute(path, "Library/CloudStorage/GoogleDrive-mert.nuhoglu@gmail.com/My Drive/", "gdrive/", "")
+  let path = substitute(path, "Library\/CloudStorage\/GoogleDrive-mert.nuhoglu@gmail.com\/My Drive\/", "gdrive/", "")
 	echom path
 	let @* = path
 	return path
 endfunction
 command! CopyFilePath2 call CopyFilePath2()
+
 function! CopyFilePath()
 	let path = CopyFilePath2()
 	let is_space_exists = matchstr(path, " ")
@@ -816,6 +926,7 @@ endfunction
 command! CopyFilePath call CopyFilePath()
 command! Cfp CopyFilePath
 nnoremap cpp :CopyFilePath<cr>
+
 function! CopyPathUrl()
 	let path = expand("%:p")
 	let path = substitute(path, "^\\(.*\\)", "<url:file://\\1>", "")
@@ -834,6 +945,7 @@ function! CopyDirectoryPath()
 	let path = substitute(path, "dcwater - Documents", "dcwater", "")
 	let path = substitute(path, "TQM - Belgeler", "tqm", "")
 	let path = substitute(path, "LAYERMARK - Belgeler", "layermark", "")
+  let path = substitute(path, "Library/CloudStorage/GoogleDrive-mert.nuhoglu@gmail.com/My Drive/", "gdrive/", "")
 	let is_space_exists = matchstr(path, " ")
 	if empty(is_space_exists)
 		let path = substitute(path, "/Users/mertnuhoglu", "\\~", "")
@@ -892,8 +1004,6 @@ endfunction
 
 command! -range=% ConvertLineEndingsIntoNewlines <line1>,<line2>call s:ConvertLineEndingsIntoNewlines()
 
-nnoremap İ :Utl<CR>
-
 function! Utl2()
 	split
 	wincmd j
@@ -922,12 +1032,15 @@ function! Utl5()
 	normal mn
 endfunction
 
-nnoremap üis :Utl2<CR>
-nnoremap üiv :call Utl3()<CR>
+" nnoremap üis :Utl2<CR>
+" nnoremap üiv :call Utl3()<CR>
+nnoremap tks :Utl2<CR>
+nnoremap tkv :call Utl3()<CR>
 " open in new tab
 " <vimhelp:utl-tutUI>
 command! UtlTab :Utl openLink underCursor tabe
-nnoremap üit :UtlTab<CR>
+" nnoremap üit :UtlTab<CR>
+nnoremap tkt :UtlTab<CR>
 
 " Navigate to prev/next note
 nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -1110,7 +1223,7 @@ command! -range=% RemoveDoubleBackSlashes <line1>,<line2>s/\\\\\\\\/\\\\/g
 command! ReplaceSlashWithBackSlashes s/\\\\/\\/g
 command! ReplaceInvisibleSpaces bufdo %s/ / /ge | update
 
-nnoremap üüo A - opt
+nnoremap tüo A - opt
 
 function! ConvertYuml2Summary()
 	norm! Go## Summary
@@ -1839,8 +1952,8 @@ function! HandleURL()
     echo "No URI found in line."
   endif
 endfunction
-map üu :call HandleURL()<cr>
-nnoremap üi :!open -a Safari %<CR><CR>
+map tu :call HandleURL()<cr>
+nnoremap ti :!open -a Safari %<CR><CR>
 
 set history=10000
 
@@ -1855,4 +1968,54 @@ set history=10000
 "nnoremap <leader>fp :CopyDirectoryPath<cr>
 
 ": }}}
+
+function! OpenFilePathInRegisterAsWikilink()
+  " Wikilink satırını yank ettiysen (registerdaysa) onu açar
+  " 
+  " in: 
+  "
+  " register has line:
+  " - [[20230317-PMS-Piyasa-Arastirmasi]]
+  "
+  " out:
+  " navigated to the file
+  "
+  let line01 = @*
+  let line02 = Strip(line01)
+  let line03 = substitute(line02, '.*\(\[\[\(.*\)\]\]\)', '\1', '')
+  let @p = line03
+  Enew2
+  normal! "pP
+  ObsidianFollowLink
+  return line03
+endfunction
+command! OpenFilePathInRegisterAsWikilink call OpenFilePathInRegisterAsWikilink()
+
+function! OpenFilePathInRegisterAsUtl()
+  " Wikilink satırını yank ettiysen (registerdaysa) onu açar
+  " 
+  " in: 
+  "
+  " register has line:
+  " - [[20230317-PMS-Piyasa-Arastirmasi]]
+  "
+  " out:
+  " navigated to the file
+  "
+  let line01 = @*
+  let line02 = Strip(line01)
+  let line03 = substitute(line02, '.*\(<url:.*>\)', '\1', '')
+  let @p = line03
+  Enew2
+  normal! "pP
+  Utl
+  return line03
+endfunction
+command! OpenFilePathInRegisterAsUtl call OpenFilePathInRegisterAsUtl()
+
+nnoremap İ :Utl<CR>
+" replaced with Ü/Sgd
+" nnoremap <leader>İ :ObsidianFollowLink<CR>
+nnoremap gİ :OpenFilePathInRegisterAsUtl<CR>
+nnoremap gÜ :OpenFilePathInRegisterAsWikilink<CR>
 
