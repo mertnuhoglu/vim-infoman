@@ -1,9 +1,12 @@
 " vim:fileencoding=utf-8:ft=vim:foldmethod=marker
+" ((b50e06f3-39e8-4b90-b059-bfa743ebaee4)) || function! GetBlockStartEnd()
 " Basic commands:
 " function! RefId()  <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12680>
 " SPC rp function! IdPair() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12688>
 " CopyUrl <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
-" SPC rn function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
+" SPC ry function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
+" ((bc24f871-32df-4214-b4ca-c5cb2a8e30a7)) || function! RefIdJournalFromAnywhere()  " SPC rb 
+" RefIdNewLogseq() " SPC ru <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g14978>
 " SPC rj function! RefIdJournal()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g13761>
 " RefIdS = IdP
 " RefLine
@@ -519,6 +522,139 @@ endfunction
 command! RefIdNewS call RefIdNewS()
 "command! IdG call RefIdNewS()
 
+function! LogseqBlockTitleExtract() "  id=g15048
+  " id:: 93c08786-6da0-4d2d-be2b-6ec588b05c04
+	" global logseq compatible ID
+	"
+	" input (file):
+  " - #dcsn Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
+  "   id:: c51669bf-833d-4790-b008-29b22f374c9a
+	" output (text):
+	normal! ^"ly$
+	let line = @l
+	" <url:...> metnini silelim
+	" - #vim #myst function! GotoBlockOrWikilink() " SPC fd <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g15045>
+	let line02 = substitute(line, '\s*<url:file[^>]\+>', '', 'g')
+
+  " f/log etiketini muhafaza edelim
+  " 	- ## #f/log Convert tsv table to pipe separated markdown table + format alignment
+  " 	->
+  " 	- ## f/log Convert tsv table to pipe separated markdown table + format alignment
+	let line03 = substitute(line02, '#f\/log ', 'f/log ', 'g')
+
+	" Remove `#tag` or `#ns/tag` or `#tag:` inside line
+	let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '', 'g')
+  " Remove internal references inside line
+	" Ex: Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
+	let line05 = substitute(line04, '(([^)]\+))\s*', '', 'g')
+  " baştaki sembolleri kaldır #:- vs. 
+	" Remove `# ` symbols in front of the line
+	" # Header Title
+	let line06 = substitute(line05, '^\s*-\+\s\+', '', '')
+	let line07 = substitute(line06, '^\s*#\+\s\+', '', '')
+	" Sondaki `:` sembolünü kaldır
+	" Örnek: Yaratıcı ve değerlendirici düşünme biçimleri arasında gidip gelmek:
+	let line08 = substitute(line07, ':\s*$', '', '')
+
+	" log kayıtlarına ref verirken, üst maddenin refini silelim
+	" 	- ## #f/log ((d90010b0-81ff-4fce-8168-1e4460fffb8c)) || Convert tsv table to pipe separated markdown table + format alignment
+	" 	->
+	" 	- ## #f/log Convert tsv table to pipe separated markdown table + format alignment
+	let line09 = substitute(line08, '(([^)]\+))\s*', '', 'g')
+	let line10 = substitute(line09, '\(||\s*\)', '', '')
+
+  let @* = line10
+  let @l = line10
+  return line10
+endfunction
+command! LogseqBlockTitleExtract call LogseqBlockTitleExtract()
+
+function! LogseqLineExtractWithoutIdString() "  
+	" global logseq compatible ID
+	"
+	" input (file):
+  " - #dcsn Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
+  "   id:: c51669bf-833d-4790-b008-29b22f374c9a
+	" output (text):
+	let line = LogseqBlockTitleExtract()
+	" Remove: id=g... string
+	" Ex: #stnd #vim #myst Sürekli düzenlediğim dosyalar: which-key > edit_map altında id=g14521
+	let line05 = substitute(line, ' id=g\d\+\s*$', '', '')
+
+  let @* = line05
+  let @l = line05
+  return line05
+endfunction
+command! LogseqLineExtractWithoutIdString call LogseqLineExtractWithoutIdString()
+function! LogseqUuidExtract() " 
+	" id:: 7562e184-6b4f-4bde-a20e-a6b3e55e6bdd
+	" global logseq compatible ID
+	"
+	" input (file):
+	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	" output (text):
+	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	" normal! ^ww"iy$
+	let f01 = getline(line('.'))
+	let regex_uuid = '[0-9a-f]\{8}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{12}'
+	let f02 = matchstr(f01, regex_uuid)
+	let uuid = f02
+
+  return uuid
+endfunction
+command! LogseqUuidExtract call LogseqUuidExtract()
+
+function! LogseqUuidGenerate() " 
+	" global logseq compatible ID
+	"
+	" input (file):
+		" - opt5: make it a function 
+	" output (file):
+	" - opt5: make it a function 
+	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	normal! o  id::  
+	Generate uuid
+	normal! $x
+	normal! k^
+endfunction
+command! LogseqUuidGenerate call LogseqUuidGenerate()
+
+function! RefIdLogseq() " SPC ru  id=g14993
+	" global logseq compatible ID
+	"
+	" input (file):
+		" - opt5: make it a function 
+		"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	" output (text):
+		" ((d965ebad-7560-47c5-8f8b-c93e79250e1a)) opt5: make it a function
+	let line = LogseqLineExtractWithoutIdString()
+	normal! j
+	let uuid = LogseqUuidExtract()
+	normal! k^
+	let uuid_ref = "((" . uuid . "))"
+	let ref = uuid_ref . " || " . line
+	let @r = ref
+	let @u = uuid_ref
+	let @* = ref
+  return ref
+endfunction
+command! RefIdLogseq call RefIdLogseq()
+
+function! RefIdNewLogseq() " SPC rU id=g14978
+	" global logseq compatible ID
+	"
+	" input:
+		" - opt5: make it a function 
+	" output:
+		" - opt5: make it a function 
+		"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	LogseqUuidGenerate
+	let ref = RefIdLogseq()
+
+  return ref
+endfunction
+command! RefIdNewLogseq call RefIdNewLogseq()
+
 function! Id6()
 	" input:
 		" opt5: make it a function 
@@ -620,20 +756,21 @@ function! RefIdJournal()  " SPC rj id=g13761
   "
   " input:
 	"   wifi connection issues id=g_10099
-  "   # ShadowCljs:-IntelliJ-ile-REPL-Baglantisi id=g13764
   " out:
   "   [[wifi connection issues]] <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
-  let rfr01 = RefId()
+  " let rfr01 = RefId()
+  let rfr01 = Strip(RefId())
 
   " baştaki "-;# gibi sembolleri sil
   let rfr02 = substitute(rfr01, '^\s*[-;#":>]*', '', '')
   " ShadowCljs:-IntelliJ-ile-REPL-Baglantisi <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
   " etrafına [[..]] koy
-  let rfr03 = substitute(rfr02, '^\(\s*\)\([^<]*\)\s\+\(.*\)', '\1[[\2]] \3', '')
+  let rfr03 = substitute(rfr02, '^\(\s*\)\([^< ]*\)\s*\(.*\)', '\1[[\2]] \3', '')
   " [[ShadowCljs:-IntelliJ-ile-REPL-Baglantisi]] <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
   " sadece [[..]] kalsın
-  let rfr04 = substitute(rfr03, ' <url.file.*', '', '')
+  let rfr04 = Strip(substitute(rfr03, ' <url.file.*', '', ''))
+
   " let rfr04 = substitute(rfr03, '^\(\s*\)\([^<]*\)', 'x\2x', '')
   " let rfr02 = substitute(rfr01, '^\(\s*\[-;#"\]\+\s*\)\(\[^<\]\+\)', '\1[[\2]]', '')
   " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)', 'x\1x', '')
@@ -655,16 +792,18 @@ function! RefIdJournal()  " SPC rj id=g13761
   " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)\(\[^<\]\+\)', 'x\1x', '')  " -
   " let rfr02 = substitute(rfr01, '^\(\s*[-;#"]\+\s*\)\(.*\)', 'x\1x\2', '')
   let rfr05 = substitute(rfr04, '.*', 'Bağlamı: \0', '')
-	let @t = printf('`%s`', rfr03)
+	" let @t = printf('`%s`', rfr03)
 	let @p = rfr02  " plain old style
-  let @* = rfr03  " standard    [[..]] <url..>
+  " let @* = rfr03  " standard    [[..]] <url..>
+  let @* = rfr04  " rfr         [[..]] 
 	let @r = rfr04  " rfr         [[..]]
 	let @b = rfr05  " rfr         [[..]]
-	return rfr03
+	return rfr04
 endfunction
 command! RefIdJournal call RefIdJournal()
 
 function! RefIdJournalFromAnywhere()  " SPC rb  id=g13901
+	" id:: bc24f871-32df-4214-b4ca-c5cb2a8e30a7
   " Dosyanın herhangi bir yerindeyken: RefIdJournal() çağırma
   "
   normal! mz
@@ -676,18 +815,42 @@ function! RefIdJournalFromAnywhere()  " SPC rb  id=g13901
 endfunction
 command! RefIdJournalFromAnywhere call RefIdJournalFromAnywhere()
 
-function! RefIdJournalFromAnywhere2()  " 
-  " RefIdJournalFromAnywhere gibi, tek farkı:
-  " Başlıkta 20230326 şeklinde tarih olması kısıtı yok
+function! RefIdJournalFromAnywhere2()  "  id=g14477
+  " id:: 9d2c95c9-3de9-489b-9822-400a3f16faf9
+  " RefIdJournalFromAnywhere gibi, farkları:
+	"
+  " 1. Başlıkta 20230326 şeklinde tarih olması kısıtı yok
+	" 2. `#` işaretinden önce `-` sembolü olabilir
   "
   normal! mz
   normal! gg
-  /^#\+ \w\+-\?.*id=\w\+\s*$
+  /^-\?\s*#\+ \w\+-\?.*id=\w\+\s*$
   let result = RefIdJournal()
   normal! 'z
   return result
 endfunction
 command! RefIdJournalFromAnywhere2 call RefIdJournalFromAnywhere2()
+
+function! RefIdJournalFromAnywhere3()  "  
+  " id:: 2d02c19a-405d-45ba-8b5a-91ed92589e3f
+  " RefIdJournalFromAnywhere2 gibi, farkları:
+	"
+  " 1. Başlıkta id=... şeklinde bilgi olması kısıtı yok
+  "
+  normal! mz
+  normal! gg
+  "
+  " regex: match the followings:
+  "   # 20231108-twtp
+  "   # 20231030-Wordpress-Kurulum id=g15120
+	"   # ndx-journal
+  "
+  /^-\?\s*#\+ [A-Za-z0-9\-_]\+\s*\(id=\w\+\)\?\s*$
+  let result = RefIdJournal()
+  normal! `z
+  return result
+endfunction
+command! RefIdJournalFromAnywhere3 call RefIdJournalFromAnywhere3()
 
 function! RefIdSDeprecated() 
 	" leiningen konusunu oku id=n_085
@@ -1043,8 +1206,8 @@ command! UtlTab :Utl openLink underCursor tabe
 nnoremap tkt :UtlTab<CR>
 
 " Navigate to prev/next note
-nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
-nnoremap sl ?^\\(@\\\\|_\\\\|#\\+ \\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
+" nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
+" nnoremap sl ?^\\(@\\\\|_\\\\|#\\+ \\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
 
 " utl.vim creating urls quickly
 imap %u <url:			">
@@ -1168,19 +1331,141 @@ endfunction
 command! -range=% ConvertDownloadUrls2CurlCommands <line1>,<line2>call ConvertDownloadUrls2CurlCommands()
 command! -range=% Cducc <line1>,<line2>call ConvertDownloadUrls2CurlCommands()
 
-function! ConvertExcel2Table() range
+function! ConvertExcel2Table() range  " tsv table to pipe separated markdown table
+  " id:: 64bcb3f1-7c9e-4451-ae3f-bac2c465cc26
+  " extra: ((6497d736-58d9-4d97-b178-131ec047f43e)) ! ConvertExcel2Table2() " tsv table to pipe separated markdown table + format alignment
+  "
+  " tsv formatındaki bir tabloyu
+  " pipe separated bir tabloya çevirir.
+  "
 	" input:
+  "   
+  "   work_product                     	 entered_at 	
+  "   20231010-Veri-Modelleme-egzersiz 	 20231102   	
+  "   20231010-Veri-Modelleme-egzersiz 	 20231102   	
+  "
 	" output:
+  "
+  "   | work_product                     | entered_at |
+  "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
+  "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
+  "
 	let my_range = a:firstline.",".a:lastline
+	" Delete extra tab characters at the end of lines
+	" Example:
+	" supplier_id	project_id	$
+	" 1	1	$
+	exe my_range . "s#\\t\\+$##"
 	exe my_range."s#^\\(\\s*\\)\\(\\w\\+\\)#\\1| \\2#"
 
 	exe my_range."s/$/ |/"
 	exe my_range."left "
 	exe my_range."s/\\t/ | /g"
-	exe my_range."left 2"
+	" exe my_range."left 2"
 endfunction
 command! -range=% ConvertExcel2Table <line1>,<line2>call ConvertExcel2Table()
 command! -range=% Cet <line1>,<line2>call ConvertExcel2Table()
+
+function! GoToEndOfParagraphBlock()
+  " Find the end of the first non-blank line.
+	/^\s*$
+  let end = line(".")
+	return end
+endfunction
+
+function! GoToStartOfParagraphBlock()
+	" id:: 3cf36456-6460-448b-873c-cc5c54c13214
+  " Find the beginning of the first non-blank line.
+	" Alternative to
+  " normal! {)
+	"
+	?^\s*$
+  let start = line(".")
+	return start
+endfunction
+
+function! GetBlockStartEnd()
+	" id:: b50e06f3-39e8-4b90-b059-bfa743ebaee4
+	" Return start and end line numbers of existing block
+	" Note: A block is group of lines that are separated from the neighbor
+	" blocks by a blank line
+	"
+	CleanEmptySpaceLines
+	let current_line = line(".")
+	" Delete space characters in space-only lines
+
+  normal! {)
+	let start = line(".")
+	normal! }
+	let end = line(".") - 1
+	call cursor(current_line, 1)
+
+	return [start, end]
+endfunction
+
+function! IsTableTitle(str)
+	" id:: 2e15391b-2907-4915-8908-f341a5a5bfb9
+	" Check if the given string is a table title
+	" Example: [Supplier-Project]		
+  "
+	let str = a:str
+  let sub = match(str, '^\s*\(\[[^\]]\+\]\)\s*$')
+  let result = sub > -1
+	echo result
+  return result
+endfunction
+command! IsTableTitle call IsTableTitle(getline("."))
+
+function! ConvertExcel2Table2() range  " SPC mT tsv table to pipe separated markdown table + format alignment
+  " id:: 6497d736-58d9-4d97-b178-131ec047f43e
+  " tsv formatındaki bir tabloyu
+  " pipe separated bir tabloya çevirir.
+  " Markdown tablonun hizalama formatını düzeltir.
+  "
+  " Assumption:
+  " Tablonun başı ve sonu boş satırlarla ayrılmış olmalı
+  "
+	" input:
+  "   
+  "   <blank-line>
+  "   work_product                     	 entered_at 	
+  "   20231010-Veri-Modelleme-egzersiz 	 20231102   	
+  "   20231010-Veri-Modelleme-egzersiz 	 20231102   	
+  "   <blank-line>
+  "
+	" output:
+  "
+  "   | work_product                     | entered_at |
+  "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
+  "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
+  "
+	let [start, end] = GetBlockStartEnd()
+	" Check if first line is table name in the following form:
+	" Example:
+	"
+	"   [Supplier-Project]		
+	"   supplier_id	project_id	
+	"   1	1	
+	"
+	let first_line = getline(start)
+  if IsTableTitle(first_line)
+		let start = start + 1
+  endif
+	
+	exe "" . start . "," . end . "ConvertExcel2Table"
+	" go to the header
+	normal! {j
+	let @d = "" . start . "," . end . "ConvertExcel2Table"
+	" 2,1ConvertExcel2Table
+
+	TableModeEnable
+	" Put separator line under header
+	normal o||
+	TableModeRealign
+
+endfunction
+command! ConvertExcel2Table2 call ConvertExcel2Table2()
+" command! -range=% ConvertExcel2Table2 <line1>,<line2>call ConvertExcel2Table2()
 
 " convert2 commands
 command! ConvertHtmlSymbolsToHumanReadable call ConvertHtmlSymbolsToHumanReadable()
@@ -1969,8 +2254,10 @@ set history=10000
 
 ": }}}
 
-function! OpenFilePathInRegisterAsWikilink()
+function! OpenWikilinkInRegister() " SPC gü
+	" id:: a75152f0-3831-4b2c-af30-7a29755bea29
   " Wikilink satırını yank ettiysen (registerdaysa) onu açar
+	" Renamed from: OpenFilePathInRegisterAsWikilink -> OpenWikilinkInRegister
   " 
   " in: 
   "
@@ -1986,10 +2273,10 @@ function! OpenFilePathInRegisterAsWikilink()
   let @p = line03
   Enew2
   normal! "pP
-  ObsidianFollowLink
+	GotoBlockOrWikilink
   return line03
 endfunction
-command! OpenFilePathInRegisterAsWikilink call OpenFilePathInRegisterAsWikilink()
+command! OpenWikilinkInRegister call OpenWikilinkInRegister()
 
 function! OpenFilePathInRegisterAsUtl()
   " Wikilink satırını yank ettiysen (registerdaysa) onu açar
@@ -2017,5 +2304,280 @@ nnoremap İ :Utl<CR>
 " replaced with Ü/Sgd
 " nnoremap <leader>İ :ObsidianFollowLink<CR>
 nnoremap gİ :OpenFilePathInRegisterAsUtl<CR>
-nnoremap gÜ :OpenFilePathInRegisterAsWikilink<CR>
+nnoremap gÜ :OpenWikilinkInRegister<CR>
 
+": navigating files {{{ id=g15014
+
+" rfr: [[20231014-Call-a-Lua-Function-from-within-Vimscript]] <url:file:///~/prj/study/logseq-study/pages/20231014-Call-a-Lua-Function-from-within-Vimscript.md#r=g15013>
+
+lua << EOF
+function _G.find_files_from_wikilink(filename)
+	local scopes = require("neoscopes")
+	require("telescope.builtin").find_files({
+		search_dirs = scopes.get_current_dirs(),
+		search_file = filename
+	})
+	return 0
+end
+EOF
+
+function! GotoWikilinkAsArg(wikilink) "
+  " id:: df9a3ffd-d644-4797-8224-c5e1d3019383
+	" input: 
+  "   wikilink as argument
+	"
+	"   [[20231014-rtc-Yatirim101-Videolari]]
+	"
+	" result:
+	"
+	"   open the following file in telescope: 20231014-rtc-Yatirim101-Videolari.md
+	"
+  let f01 = a:wikilink
+  let f02 = substitute(f01, '[\[\]]', '', 'g')
+	" [[f/fkr]] -> f___fkr
+  let f03 = substitute(f02, '\/', '___', 'g')
+  let f04 = substitute(f03, '.*', '\0.md', '')
+	echo f04
+	call v:lua.find_files_from_wikilink(f04)
+  return f04
+endfunction
+command! GotoWikilink call GotoWikilink()
+
+function! GotoWikilink() " SPC fn id=g15020
+  " id:: a25bbc96-8bc0-41d4-944f-152f01f2a36c
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   [[20231014-rtc-Yatirim101-Videolari]]
+	"
+	" result:
+	"
+	"   open the following file in telescope: 20231014-rtc-Yatirim101-Videolari.md
+	"
+	normal! "fyi]
+  let f01 = @f
+  let f04 = GotoWikilinkAsArg(f01)
+  return f04
+endfunction
+command! GotoWikilink call GotoWikilink()
+
+lua << EOF
+function _G.dump(o)
+   if type(o) == 'table' then
+      local s = '{ '
+      for k,v in pairs(o) do
+         if type(k) ~= 'number' then k = '"'..k..'"' end
+         s = s .. '['..k..'] = ' .. dump(v) .. ','
+      end
+      return s .. '} '
+   else
+      return tostring(o)
+   end
+end
+EOF
+
+lua << EOF
+function _G.find_ref_from_logseq_block_ref(search_string)
+	-- rfr: _G.live_grep2 = function() -- <url:file:///~/prj/private_dotfiles/.config/nvimconfigs/lazyvim/init.lua#r=g15021>
+	local scopes = require("neoscopes")
+  require("telescope.builtin").grep_string({
+    search_dirs = scopes.get_current_dirs(),
+		glob_pattern = "*.{md|vim|lua|txt|csv|tsv|otl|clj|cljc|cljs|js}",
+		search = search_string
+
+  })
+	return 0
+end
+EOF
+
+function! GotoBlockRefFromBlockLink() " 
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26))
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26
+	"
+	normal! "fyi)
+  let f01 = @f
+  let f02 = substitute(f01, '[()]', '', 'g')
+	let f03 = "((" . f02 . "))"
+	let f03 = f02
+	" echo f03
+	call v:lua.find_ref_from_logseq_block_ref(f03)
+
+  return f03
+endfunction
+command! GotoBlockRef call GotoBlockRef()
+
+function! GotoBlockRefFromIdDef() " 
+	" id:: 34934eee-b945-47a4-a6b7-87a608ad6950
+	" input: 
+	"   cursor is on top of the following line:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"
+	" result:
+	"
+	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26))
+	"
+	echo "merhaba"
+	let f01 = getline(line('.') + 1)
+	let regex_uuid = '[0-9a-f]\{8}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{12}'
+	let f02 = matchstr(f01, regex_uuid)
+
+	call v:lua.find_ref_from_logseq_block_ref(f02)
+  return f02
+endfunction
+command! GotoBlockRefFromIdDef call GotoBlockRefFromIdDef()
+
+function! GotoBlockRef() " SPC fD id=g15022
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"
+	let line = Strip2(getline("."))
+	let is_blocklink = GrepInString("))", line)
+	let is_wikilink = GrepInString("]]", line)
+	let next_line = getline(line('.') + 1)
+	let is_block_def = GrepInString("\\<id:: ", next_line)
+
+	" normal! "fyi)
+	"  let f01 = @f
+	"  let f02 = substitute(f01, '[()]', '', 'g')
+	" let f03 = "((" . f02 . "))"
+	" let f03 = f02
+	" " echo f03
+	" call v:lua.find_ref_from_logseq_block_ref(f03)
+
+	if is_blocklink
+		call GotoBlockRefFromBlockLink()
+	elseif is_wikilink
+		call GotoWikilink()
+	elseif is_block_def
+		call GotoBlockRefFromIdDef()
+	endif
+	"
+  " return f03
+endfunction
+command! GotoBlockRef call GotoBlockRef()
+
+function! GotoBlockDef() " SPC fd id=g15023
+	" id:: 4a07276d-1ed9-40a2-9f12-c816bbf46ecd
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"
+	normal! "fyi)
+  let f01 = @f
+  let f02 = substitute(f01, '[()]', '', 'g')
+	let f03 = "id:: " . f02
+	echo f03
+	call v:lua.find_ref_from_logseq_block_ref(f03)
+  return f03
+endfunction
+command! GotoBlockDef call GotoBlockDef()
+
+function GrepInString(pattern, string)
+	" rfr: [[20231018-Vimscript-Grep-Function]] <url:file:///~/projects/study/logseq-study/pages/20231018-Vimscript-Grep-Function.md#r=g15043>
+
+	let pattern = a:pattern
+	let string = a:string
+  let matches = match(string, pattern)
+  return matches > 0
+endfunction
+
+function Rcb20231018_02()
+	let string = "This is a sample text."
+	let pattern = "sample"
+
+	if GrepInString(pattern, string)
+		echo "The pattern '" . pattern . "' was found in the string '" . string . "'."
+	else
+		echo "The pattern '" . pattern . "' was not found in the string '" . string . "'."
+	endif
+endfunction
+
+function! GotoBlockOrWikilink() " SPC fd id=g15045
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"
+	let line = Strip2(getline("."))
+	let is_blocklink = GrepInString("))", line)
+	let is_wikilink = GrepInString("]]", line)
+	let next_line = getline(line('.') + 1)
+	let is_block_def = GrepInString("\\<id:: ", next_line)
+	if is_blocklink
+		call GotoBlockDef()
+	endif
+	if is_wikilink
+		call GotoWikilink()
+	endif
+endfunction
+command! GotoBlockOrWikilink call GotoBlockOrWikilink()
+
+": }}}
+
+": debug: tüm dosyaların listesini çıkartalım {{{ 
+
+" Enter tuşuna basınca o dosyaya gider miyim?
+function! Goto2() 
+	GotoWikilink
+	" normal! <CR>
+	execute "normal! \<cr>"
+endfunction
+command! Goto2 call Goto2()
+
+lua << EOF
+function _G.find_note2()
+	local util = require "obsidian.util"
+	-- local client_dir = "/Users/mertnuhoglu/gdrive/grsm/opal/docs-grsm/pages"
+	-- local note_file_name = "20230914-pln-Veri-Modellemesi-Egitimi.md"
+	-- local client_dir = "/Users/mertnuhoglu/prj/myrepo/logseq-myrepo/pages"
+	-- local note_file_name = "20231013-Karar-almanin-beni-korkutan-taraflari-var.md"
+	local client_dir = "/Users/mertnuhoglu/prj/myrepo"
+	-- local note_file_name = "20231013-Karar-almanin-beni-korkutan-taraflari-var.md"
+	local note_file_name = "20230914-pln-Veri-Modellemesi-Egitimi.md"
+	local notes = util.find_note(client_dir, note_file_name)
+	print(dump(notes))
+	return 0
+end
+EOF
+
+function! FindNote20231015() 
+	call v:lua.find_note2()
+endfunction
+command! FindNote20231015 call FindNote20231015()
+" Tam istediğim gibi çalışmıyor.
+" Sadece tek bir klasörün altındaki dosyaları buluyor.
+" symlink takip etmiyor
+" Birden çok klasörle çalışmıyor.
+"
+": }}}
+
+
+": }}}
