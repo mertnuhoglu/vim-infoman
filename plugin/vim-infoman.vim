@@ -2321,6 +2321,27 @@ function _G.find_files_from_wikilink(filename)
 end
 EOF
 
+function! GetWikilink()
+	" id:: 147ef2c8-6835-456c-9b88-58798f983c04
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   [[20231014-rtc-Yatirim101-Videolari]]
+	"
+	" result:
+	"
+	"		20231014-rtc-Yatirim101-Videolari
+	"
+	normal! "fyi]
+  let f01 = @f
+  let f02 = substitute(f01, '[\[\]]', '', 'g')
+	" [[f/fkr]] -> f___fkr
+  let f03 = substitute(f02, '\/', '___', 'g')
+  let f04 = substitute(f03, '.*', '\0.md', '')
+	return f04
+endfunction
+command! GetWikilink call GetWikilink()
+
 function! GotoWikilinkAsArg(wikilink) "
   " id:: df9a3ffd-d644-4797-8224-c5e1d3019383
 	" input: 
@@ -2343,7 +2364,7 @@ function! GotoWikilinkAsArg(wikilink) "
 endfunction
 command! GotoWikilink call GotoWikilink()
 
-function! GotoWikilink() " SPC fn id=g15020
+function! GotoWikilink(wikilink) " SPC fn id=g15020
   " id:: a25bbc96-8bc0-41d4-944f-152f01f2a36c
 	" input: 
 	"   cursor is on top of the following word:
@@ -2354,12 +2375,14 @@ function! GotoWikilink() " SPC fn id=g15020
 	"
 	"   open the following file in telescope: 20231014-rtc-Yatirim101-Videolari.md
 	"
-	normal! "fyi]
-  let f01 = @f
-  let f04 = GotoWikilinkAsArg(f01)
-  return f04
+	let wikilink = a:wikilink
+	if empty(wikilink)
+		let wikilink = GetWikilink() 
+	endif
+	call v:lua.find_files_from_wikilink(wikilink)
+  return wikilink
 endfunction
-command! GotoWikilink call GotoWikilink()
+command! GotoWikilink call GotoWikilink("")
 
 lua << EOF
 function _G.dump(o)
@@ -2394,12 +2417,12 @@ function! GotoBlockRefFromBlockLink() "
 	" input: 
 	"   cursor is on top of the following word:
 	"
-	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
 	"
 	" result:
 	"
 	"   search the following string in telescope: 
-	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26
 	"
 	normal! "fyi)
   let f01 = @f
@@ -2419,11 +2442,11 @@ function! GotoBlockRefFromIdDef() "
 	"   cursor is on top of the following line:
 	"
 	"   search the following string in telescope: 
-	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	" result:
 	"
-	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
 	"
 	echo "merhaba"
 	let f01 = getline(line('.') + 1)
@@ -2439,12 +2462,12 @@ function! GotoBlockRef() " SPC fD id=g15022
 	" input: 
 	"   cursor is on top of the following word:
 	"
-	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26 ))
 	"
 	" result:
 	"
 	"   search the following string in telescope: 
-	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	let line = Strip2(getline("."))
 	let is_blocklink = GrepInString("))", line)
@@ -2472,27 +2495,47 @@ function! GotoBlockRef() " SPC fD id=g15022
 endfunction
 command! GotoBlockRef call GotoBlockRef()
 
-function! GotoBlockDef() " SPC fd id=g15023
-	" id:: 4a07276d-1ed9-40a2-9f12-c816bbf46ecd
+function! GetBlockRef() 
+	" id:: 008f6037-114b-477d-875d-c4dd29aba1e0
 	" input: 
 	"   cursor is on top of the following word:
 	"
-	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26 ))
 	"
 	" result:
 	"
-	"   search the following string in telescope: 
-	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	normal! "fyi)
   let f01 = @f
   let f02 = substitute(f01, '[()]', '', 'g')
 	let f03 = "id:: " . f02
-	echo f03
-	call v:lua.find_ref_from_logseq_block_ref(f03)
-  return f03
+	return f03
 endfunction
-command! GotoBlockDef call GotoBlockDef()
+command! GetBlockRef call GetBlockRef()
+
+function! GotoBlockDef(ref) " SPC fd id=g15023
+	" id:: 4a07276d-1ed9-40a2-9f12-c816bbf46ecd
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26 ))
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let ref = a:ref
+	if empty(ref)
+		let ref = GetBlockRef() 
+	endif
+
+	echo ref
+	call v:lua.find_ref_from_logseq_block_ref(ref)
+  return ref
+endfunction
+command! GotoBlockDef call GotoBlockDef("")
 
 function GrepInString(pattern, string)
 	" rfr: [[20231018-Vimscript-Grep-Function]] <url:file:///~/projects/study/logseq-study/pages/20231018-Vimscript-Grep-Function.md#r=g15043>
@@ -2514,17 +2557,17 @@ function Rcb20231018_02()
 	endif
 endfunction
 
-function! GotoBlockOrWikilink() " SPC fd id=g15045
+function! GetRef() 
+	" id:: 16a647a4-9c2f-4b44-9b6e-3dd1c3e6046f
 	" input: 
 	"   cursor is on top of the following word:
 	"
-	"   ((2f128e0f-7cc0-46ad-894a-de3265ae8b26 ))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
 	"   [[20231018-Vimscript-Grep-Function]]
 	"
 	" result:
 	"
-	"   search the following string in telescope: 
-	"     id:: 2f128e0f-7cc0-46ad-894a-de3265ae8b26 
+	"   2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	let line = Strip2(getline("."))
 	let is_blocklink = GrepInString("))", line)
@@ -2532,13 +2575,54 @@ function! GotoBlockOrWikilink() " SPC fd id=g15045
 	let next_line = getline(line('.') + 1)
 	let is_block_def = GrepInString("\\<id:: ", next_line)
 	if is_blocklink
-		call GotoBlockDef()
+		let ref = GetBlockRef() 
 	endif
 	if is_wikilink
-		call GotoWikilink()
+		let ref = GetWikilink() 
+	endif
+	return [ref, is_blocklink, is_wikilink]
+endfunction
+command! GetRef call GetRef()
+
+function! GotoBlockOrWikilink() " SPC fd id=g15045
+	" id:: 5caa9c16-3450-426e-aa81-5b1879e1eb41
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let [ref, is_blocklink, is_wikilink] = GetRef()
+	if is_blocklink
+		call GotoBlockDef(ref)
+	endif
+	if is_wikilink
+		call GotoWikilink(ref)
 	endif
 endfunction
 command! GotoBlockOrWikilink call GotoBlockOrWikilink()
+
+function! GotoBlockOrWikilinkTab() " SPC ft
+	" id:: 7fb64f86-491f-44d8-9087-aa657899006f
+	" GotoBlockOrWikilink in a new tab
+	" ((5caa9c16-3450-426e-aa81-5b1879e1eb41)) || function! GotoBlockOrWikilink() " SPC fd
+	"
+	let [ref, is_blocklink, is_wikilink] = GetRef()
+	if is_blocklink
+		tabnew
+		call GotoBlockDef(ref)
+	endif
+	if is_wikilink
+		tabnew
+		call GotoWikilink(ref)
+	endif
+endfunction
+command! GotoBlockOrWikilinkTab call GotoBlockOrWikilinkTab()
 
 ": }}}
 
