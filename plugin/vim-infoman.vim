@@ -1,16 +1,20 @@
 " vim:fileencoding=utf-8:ft=vim:foldmethod=marker
 " ((b50e06f3-39e8-4b90-b059-bfa743ebaee4)) || function! GetBlockStartEnd()
 " Basic commands:
-" function! RefId()  <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12680>
-" SPC rp function! IdPair() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12688>
+" function! RefId()  " SPC ru || ((7beea565-31fa-47a9-9d63-6202bfe0b7d4))
+" function! RefIdAnywhere()  "  SPC rb || ((2d02c19a-405d-45ba-8b5a-91ed92589e3f))
+" function! GotoBlockOrWikilink() " SPC fd || ((5caa9c16-3450-426e-aa81-5b1879e1eb41))
+" function! IdPair() || ((a9b3bd34-46d9-4e2a-9b19-984b3d2c853a))
 " CopyUrl <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
 " SPC ry function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
-" ((bc24f871-32df-4214-b4ca-c5cb2a8e30a7)) || function! RefIdJournalFromAnywhere()  " SPC rb 
-" RefIdNewLogseq() " SPC ru <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g14978>
+" ((2e0bf50f-3b07-4974-a07e-f7e53441a2f6)) || function! RefIdNewLogseq() " SPC rU
 " SPC rj function! RefIdJournal()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g13761>
+" function! RefIdLogseq() " SPC ru  || ((79383fcf-a034-4592-b4b1-5f78daee66d6))
 " RefIdS = IdP
 " RefLine
 " En2
+" function! RefIdUtl()  " SPC ri || ((48b0ce88-a69c-4499-8387-5e89090dcf34))
+" function! RefIdUtlJournal()  " SPC rj || ((352e0820-99e6-4dc1-bb55-028002a9f6d9))
 
 command! -bar Enew2 enew | set buftype=nofile
 command! Enew3 split | enew | set buftype=nofile
@@ -340,7 +344,7 @@ function! TestReadWordsIntoVariable()
 	let words = ReadWordsInFile()
 	ech	- words
 endfunction
- 
+
 function! ConvertKeynoteFile()
 	g/^--- \\d/ s/\\(^--- \\)\\(\\d\\)\\(.*\\)/\\1\\2\\3{{{\\2/
 	set foldmethod=marker
@@ -405,7 +409,7 @@ function! CopyLocation2()
 endfunction
 command! CopyLocation2 call CopyLocation2()
 command! RefWord CopyLocation2
-                                
+
 " copy line with relative path for use in utl.vim url
 function! RefLine()
   " some text
@@ -454,7 +458,6 @@ function! CopyUrl()
 endfunction
 command! CopyUrl call CopyUrl()
 command! CopyRefId call CopyUrl()
-" command! RefId CopyUrl 
 
 function! Strip2(input_string)
   let a0 = substitute(a:input_string, '^\_s*\(.\{-}\)\_s*$', '\1', '')
@@ -515,8 +518,8 @@ function! RefIdNewS()
 		" opt5: make it a function id=g_00009
 		" opt5: make it a function <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/study_trycatch.R#r=g_00009>
 	PutGlobalId
-	let line = RefId()
-	" let line = RefIdJournal()
+	let line = RefIdUtl()
+	" let line = RefIdUtlJournal()
   return line
 endfunction
 command! RefIdNewS call RefIdNewS()
@@ -535,15 +538,26 @@ function! LogseqBlockTitleExtract() "  id=g15048
 	" <url:...> metnini silelim
 	" - #vim #myst function! GotoBlockOrWikilink() " SPC fd <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g15045>
 	let line02 = substitute(line, '\s*<url:file[^>]\+>', '', 'g')
+	let line02b = substitute(line02, '##\+ ', '', '')
 
   " f/log etiketini muhafaza edelim
   " 	- ## #f/log Convert tsv table to pipe separated markdown table + format alignment
   " 	->
   " 	- ## f/log Convert tsv table to pipe separated markdown table + format alignment
-	let line03 = substitute(line02, '#f\/log ', 'f/log ', 'g')
+	let line03 = substitute(line02b, '#f\/log ', 'f/log ', 'g')
 
-	" Remove `#tag` or `#ns/tag` or `#tag:` inside line
-	let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '', 'g')
+	" prb: `#tag` handling:
+	" a01: Remove `#tag` or `#ns/tag` or `#tag:` inside line
+	" let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '', 'g')
+	" a02: Wrap with backtick
+	"> line03: #stnd #f/qry title
+	let line04a = substitute(line03, '#\([^: ]\+\)\([: ]\|$\)\@=', '`\1`', 'g')
+	"> line04a: `stnd``f/qry` title
+	let line04b = substitute(line04a, '\(\w\)` `\(\w\)', '\1 \2', 'g')
+	"> line04b: `stnd f/qry` title
+	let line04 = substitute(line04b, '\(`[^`]\+`\)[: ]\+\(.\+\)', '\2 \1', 'g')
+	"> line04: title `stnd f/qry`
+
   " Remove internal references inside line
 	" Ex: Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
 	let line05 = substitute(line04, '(([^)]\+))\s*', '', 'g')
@@ -562,14 +576,19 @@ function! LogseqBlockTitleExtract() "  id=g15048
 	" 	- ## #f/log Convert tsv table to pipe separated markdown table + format alignment
 	let line09 = substitute(line08, '(([^)]\+))\s*', '', 'g')
 	let line10 = substitute(line09, '\(||\s*\)', '', '')
+	" > (defn -main
+	" ->
+	" > defn -main
+	let line11 = substitute(line10, '^\s*(', '', '')
 
-  let @* = line10
-  let @l = line10
-  return line10
+  let @* = line11
+  let @l = line11
+  return line11
 endfunction
 command! LogseqBlockTitleExtract call LogseqBlockTitleExtract()
 
 function! LogseqLineExtractWithoutIdString() "  
+	" id:: 0d18472a-470d-4f22-9be1-de6a6367c1e1
 	" global logseq compatible ID
 	"
 	" input (file):
@@ -580,10 +599,15 @@ function! LogseqLineExtractWithoutIdString() "
 	" Remove: id=g... string
 	" Ex: #stnd #vim #myst Sürekli düzenlediğim dosyalar: which-key > edit_map altında id=g14521
 	let line05 = substitute(line, ' id=g\d\+\s*$', '', '')
+	" Remove: url from markdown link
+	" 	> [Datascript and Datomic: Data Modeling for Heroes - Mark Bastian - YouTube](https://www.youtube.com/watch?v=tV4pHW_WOrY&t=1s) || ((96d81571-64a4-4420-be93-d5f312d60f2a))
+	" 	->
+	" 	> Datascript and Datomic: Data Modeling for Heroes - Mark Bastian - YouTube
+	let line06 = substitute(line05, '\[\([^\]]\+\)\](https\?:[^)]\+)', '\1', '')
 
-  let @* = line05
-  let @l = line05
-  return line05
+  let @* = line06
+  let @l = line06
+  return line06
 endfunction
 command! LogseqLineExtractWithoutIdString call LogseqLineExtractWithoutIdString()
 function! LogseqUuidExtract() " 
@@ -591,9 +615,9 @@ function! LogseqUuidExtract() "
 	" global logseq compatible ID
 	"
 	" input (file):
-	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
 	" output (text):
-	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
 	" normal! ^ww"iy$
 	let f01 = getline(line('.'))
 	let regex_uuid = '[0-9a-f]\{8}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{4}-[0-9a-f]\{12}'
@@ -611,7 +635,7 @@ function! LogseqUuidGenerate() "
 		" - opt5: make it a function 
 	" output (file):
 	" - opt5: make it a function 
-	"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+	"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
 	normal! o  id::  
 	Generate uuid
 	normal! $x
@@ -619,35 +643,81 @@ function! LogseqUuidGenerate() "
 endfunction
 command! LogseqUuidGenerate call LogseqUuidGenerate()
 
+function! RefId()  " SPC ru
+	" id:: 7beea565-31fa-47a9-9d63-6202bfe0b7d4
+	" global logseq compatible ID
+	"
+	" input (file):
+	"   - opt5: make it a function 
+	"     id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
+	" output (text):
+	"   - opt5: make it a function  || ((xxxxxx-7560-47c5-8f8b-c93e79250e1a))
+	"
+	if LogseqCheckIdExists()
+		let ref = RefIdLogseq()
+	else
+		let ref = RefIdNewLogseq()
+	endif
+	return ref
+endfunction
+command! RefId call RefId()
+
+function! RefIdShort()  " SPC rs
+	" id:: 851c7dc2-a079-4b67-9c55-7e09281ab540
+	" short uuid
+	"
+	" input (file):
+	"   - opt5: make it a function 
+	"     id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
+	" output (text): 
+	"   ((xxxxxx))
+	"
+	if LogseqCheckIdExists()
+		normal! j
+		let uuid = LogseqUuidExtract()
+		let regex_uuid = '[0-9a-f]\{8}'
+		let f02 = matchstr(uuid, regex_uuid)
+		let ref = "((" . f02 . "))"
+		normal! k^
+		let @r = ref
+		let @* = ref
+		return ref
+	endif
+endfunction
+command! RefIdShort call RefIdShort()
+
 function! RefIdLogseq() " SPC ru  id=g14993
+	" id:: 79383fcf-a034-4592-b4b1-5f78daee66d6
 	" global logseq compatible ID
 	"
 	" input (file):
 		" - opt5: make it a function 
-		"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+		"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
 	" output (text):
-		" ((d965ebad-7560-47c5-8f8b-c93e79250e1a)) opt5: make it a function
+		" ((xxxxxx-7560-47c5-8f8b-c93e79250e1a)) opt5: make it a function
 	let line = LogseqLineExtractWithoutIdString()
 	normal! j
 	let uuid = LogseqUuidExtract()
 	normal! k^
 	let uuid_ref = "((" . uuid . "))"
 	let ref = uuid_ref . " || " . line
-	let @r = ref
-	let @u = uuid_ref
-	let @* = ref
-  return ref
+	let ref2 = line . " || " . uuid_ref 
+	let @r = ref2
+	let @u = ref
+	let @* = ref2
+  return ref2
 endfunction
 command! RefIdLogseq call RefIdLogseq()
 
 function! RefIdNewLogseq() " SPC rU id=g14978
+	" id:: 2e0bf50f-3b07-4974-a07e-f7e53441a2f6
 	" global logseq compatible ID
 	"
 	" input:
 		" - opt5: make it a function 
 	" output:
 		" - opt5: make it a function 
-		"   id:: d965ebad-7560-47c5-8f8b-c93e79250e1a
+		"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
 	LogseqUuidGenerate
 	let ref = RefIdLogseq()
 
@@ -677,7 +747,7 @@ function! IdR()
 		" # update_new_fields = function() { <url:file:///~/Dropbox (BTG)/TEUIS PROJECT 05-ANALYSIS/working_library/requirements_database/scripts/prepare_rdb_data_operations.R#r=g_0009>
 	norm! A # 
 	PutGlobalId
-	call RefId()
+	call RefIdUtl()
 endfunction
 command! IdR call IdR()
 
@@ -706,7 +776,10 @@ function! ReplaceInLineAsFilePath(url)
   return a:url
 endfunction
 
-function! RefId()  " id=g12680
+function! RefIdUtl()  " SPC ri id=g12680
+	" id:: 48b0ce88-a69c-4499-8387-5e89090dcf34
+	" @deprecated: Replaced with RefId
+	"
   " input:
 	"   wifi connection issues id=g_10099
   " out:
@@ -749,9 +822,11 @@ function! RefId()  " id=g12680
   let @* = line08
 	return line08
 endfunction
-command! RefId call RefId()
+command! RefIdUtl call RefIdUtl()
 
-function! RefIdJournal()  " SPC rj id=g13761
+function! RefIdUtlJournal()  " SPC rj id=g13761
+	" id:: 352e0820-99e6-4dc1-bb55-028002a9f6d9
+	" Renamed: RefIdJournal to RefIdUtlJournal
   " Logseq Journal uyumlu vim rfr linki oluşturma
   "
   " input:
@@ -759,15 +834,15 @@ function! RefIdJournal()  " SPC rj id=g13761
   " out:
   "   [[wifi connection issues]] <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
-  " let rfr01 = RefId()
-  let rfr01 = Strip(RefId())
+  " let rfr01 = RefIdUtl()
+  let rfr01 = Strip(RefIdUtl())
 
   " baştaki "-;# gibi sembolleri sil
   let rfr02 = substitute(rfr01, '^\s*[-;#":>]*', '', '')
-  " ShadowCljs:-IntelliJ-ile-REPL-Baglantisi <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
+  " ShadowCljs:-IntelliJ-ile-REPL-Baglantisi <url:file:///~/prj/collabry/cldocs/cllogseq/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
   " etrafına [[..]] koy
   let rfr03 = substitute(rfr02, '^\(\s*\)\([^< ]*\)\s*\(.*\)', '\1[[\2]] \3', '')
-  " [[ShadowCljs:-IntelliJ-ile-REPL-Baglantisi]] <url:file:///~/gdrive/grsm/opal/docs-grsm/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
+  " [[ShadowCljs:-IntelliJ-ile-REPL-Baglantisi]] <url:file:///~/prj/collabry/cldocs/cllogseq/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
   " sadece [[..]] kalsın
   let rfr04 = Strip(substitute(rfr03, ' <url.file.*', '', ''))
 
@@ -800,24 +875,37 @@ function! RefIdJournal()  " SPC rj id=g13761
 	let @b = rfr05  " rfr         [[..]]
 	return rfr04
 endfunction
-command! RefIdJournal call RefIdJournal()
+command! RefIdUtlJournal call RefIdUtlJournal()
 
-function! RefIdJournalFromAnywhere()  " SPC rb  id=g13901
+function! RefIdAnywhere1()  " SPC rb  id=g13901
 	" id:: bc24f871-32df-4214-b4ca-c5cb2a8e30a7
-  " Dosyanın herhangi bir yerindeyken: RefIdJournal() çağırma
+	" Input: (cursor is anywhere in file)
+	"
+	"   # 20231218-Title id=...
+	"
+	" Output:
+	"
+	"   [[20231218-Title]]
+	"
+	" Rename: RefIdJournalFromAnywhere to RefIdAnywhere1
+  " Dosyanın herhangi bir yerindeyken: RefIdUtlJournal() çağırma
   "
   normal! mz
   normal! gg
   /^#\+ 202\d\+-.*id=\w\+\s*$
-  let result = RefIdJournal()
+  let result = RefIdUtlJournal()
   normal! 'z
   return result
 endfunction
-command! RefIdJournalFromAnywhere call RefIdJournalFromAnywhere()
+command! RefIdAnywhere1 call RefIdAnywhere1()
 
-function! RefIdJournalFromAnywhere2()  "  id=g14477
+function! RefIdAnywhere2()  "  id=g14477
   " id:: 9d2c95c9-3de9-489b-9822-400a3f16faf9
-  " RefIdJournalFromAnywhere gibi, farkları:
+	" Rename: RefIdJournalFromAnywhere2 to RefIdAnywhere2
+	"
+	" doc: function! RefIdAnywhere1()  " SPC rb  || ((bc24f871-32df-4214-b4ca-c5cb2a8e30a7))
+	"
+  " RefIdAnywhere1 ile farkları:
 	"
   " 1. Başlıkta 20230326 şeklinde tarih olması kısıtı yok
 	" 2. `#` işaretinden önce `-` sembolü olabilir
@@ -825,17 +913,22 @@ function! RefIdJournalFromAnywhere2()  "  id=g14477
   normal! mz
   normal! gg
   /^-\?\s*#\+ \w\+-\?.*id=\w\+\s*$
-  let result = RefIdJournal()
+  let result = RefIdUtlJournal()
   normal! 'z
   return result
 endfunction
-command! RefIdJournalFromAnywhere2 call RefIdJournalFromAnywhere2()
+command! RefIdAnywhere2 call RefIdAnywhere2()
 
-function! RefIdJournalFromAnywhere3()  "  
+function! RefIdAnywhere()  "  SPC rb
   " id:: 2d02c19a-405d-45ba-8b5a-91ed92589e3f
-  " RefIdJournalFromAnywhere2 gibi, farkları:
+	" Renamed: RefIdJournalFromAnywhere3 to RefIdAnywhere
+	"
+	" doc: function! RefIdAnywhere2()  "  || ((9d2c95c9-3de9-489b-9822-400a3f16faf9))
+	"
+  " RefIdAnywhere2 ile farkları:
 	"
   " 1. Başlıkta id=... şeklinde bilgi olması kısıtı yok
+	" 2. Başlıkta `/` karakterleri olabilir
   "
   normal! mz
   normal! gg
@@ -844,13 +937,38 @@ function! RefIdJournalFromAnywhere3()  "
   "   # 20231108-twtp
   "   # 20231030-Wordpress-Kurulum id=g15120
 	"   # ndx-journal
+	"   # ndx/vim/logseq
   "
-  /^-\?\s*#\+ [A-Za-z0-9\-_]\+\s*\(id=\w\+\)\?\s*$
-  let result = RefIdJournal()
-  normal! `z
-  return result
+	try
+		/^-\?\s*#\+ [A-Za-z0-9/\-_]\+\s*\(id=\w\+\)\?\s*$
+		let result = RefIdUtlJournal()
+		echo 'Copied: ' . result
+		return result
+	catch /.*/
+    echo "Caught error: " . v:exception
+		normal! `z
+		return RefIdFromFileName()
+	endtry
 endfunction
-command! RefIdJournalFromAnywhere3 call RefIdJournalFromAnywhere3()
+command! RefIdAnywhere call RefIdAnywhere()
+
+function! RefIdFromFileName()  "  SPC rB
+	" similar: function! RefIdAnywhere()  "  SPC rb || ((2d02c19a-405d-45ba-8b5a-91ed92589e3f))
+	"
+	" Input: (reads file name)
+	"   some-file.x
+	" Output:
+	"   [[some-file.x]]
+	"
+	let f01 = expand("%:t")
+	" [[f___fkr]] -> f/fkr
+  let f02 = substitute(f01, '___', '\/', 'g')
+	let wikilink = substitute(f02, '.*', '[[\0]]', '')
+	let @* = wikilink
+	echo wikilink
+	return wikilink
+endfunction
+command! RefIdFromFileName call RefIdFromFileName()
 
 function! RefIdSDeprecated() 
 	" leiningen konusunu oku id=n_085
@@ -872,8 +990,7 @@ function! RefIdSDeprecated()
 	let @t = printf('`%s`', line)
 	return line
 endfunction
-command! RefIdS call RefId()
-command! RefId call RefId()
+command! RefIdS call RefIdUtl()
 
 function! PasteRefLineALink() 
 	" Build java modules <a name="build_java_module"></a>
@@ -939,6 +1056,21 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 "	mark destination (done place) as d
 " function! IdPair() id=g12688
 function! IdPair()
+	" id:: a9b3bd34-46d9-4e2a-9b19-984b3d2c853a
+  normal! mt
+	normal! 's
+	let src = RefIdNewLogseq()
+	normal! 't
+	execute "normal! o\<Tab>return: " . src . "\<Esc>"
+	normal! 't
+	let dest = RefIdNewLogseq()
+	normal! 'sj
+	execute "normal! odone: " . dest . "\<Esc>"
+endfunction
+command! IdPair call IdPair()
+
+function! IdPair20231216()
+	" id:: c46c91e9-66a2-499f-9526-568551c83bc0
   normal! mt
 	normal! 's
 	let line = trim(RefIdNewS())
@@ -949,7 +1081,6 @@ function! IdPair()
 	normal! 's
 	execute "normal! o\<Tab>done: " . line . "\<Esc>"
 endfunction
-command! IdPair call IdPair()
 
 " replace change name
 function! SubstituteNameInBufDo(old_name, new_name)
@@ -1040,15 +1171,28 @@ command! ConvertCsv2Excel call ConvertCsv2Excel()
 command! CCsv2Excel call ConvertCsv2Excel()
 
 " convert ascii tables t	- tabbed csv
-function! ConvertTable2Excel()
-	g/---|/d
-	%s/|/,/g
-	%s/^\s*,\s*//
-	%s/\s*,\s*$//
-	%s/ *, */,/g
-	%s/,/\t/g
+function! ConvertTable2Excel() range
+	" id:: cd510874-33b6-431c-83eb-a42ff9572ed6
+	" Delete extra tab characters at the end of lines
+	" Example:
+	" supplier_id	project_id	$
+	" 1	1	$
+	let my_range = a:firstline.",".a:lastline
+	exe my_range . 's/|/,/g'
+	exe my_range . 's/^\s*,\s*//'
+	exe my_range . 's/\s*,\s*$//'
+	exe my_range . 's/ *, */,/g'
+	exe my_range . 's/,/\t/g'
+	exe my_range . 'g/^\s*[- \t]\+/d'
 endfunction
-command! ConvertTable2Excel call ConvertTable2Excel()
+command! -range=% ConvertTable2Excel <line1>,<line2>call ConvertTable2Excel()
+
+function! ConvertTable2Excel2()
+	" id:: e2120f1a-a071-4f2f-a7cf-b754744346c5
+	let [start, end] = GetBlockStartEnd()
+	exe "" . start . "," . end . "ConvertTable2Excel"
+endfunction
+command! ConvertTable2Excel2 call ConvertTable2Excel2()
 
 function! ConvertTable2Csv()
 	ConvertTable2Excel
@@ -1197,13 +1341,13 @@ endfunction
 
 " nnoremap üis :Utl2<CR>
 " nnoremap üiv :call Utl3()<CR>
-nnoremap tks :Utl2<CR>
-nnoremap tkv :call Utl3()<CR>
+" nnoremap tks :Utl2<CR>
+" nnoremap tkv :call Utl3()<CR>
 " open in new tab
 " <vimhelp:utl-tutUI>
 command! UtlTab :Utl openLink underCursor tabe
 " nnoremap üit :UtlTab<CR>
-nnoremap tkt :UtlTab<CR>
+" nnoremap tkt :UtlTab<CR>
 
 " Navigate to prev/next note
 " nnoremap sm /^\\(@\\\\|_\\\\|#\\+ \\\\|^\\S\\+ \\(=\\\\|<-\\) function\\\\|^\\s*\\(public\\\\|private\\\\|protected\\)[^)]*)[^{]*{\\s*\\)<CR>
@@ -1350,7 +1494,11 @@ function! ConvertExcel2Table() range  " tsv table to pipe separated markdown tab
   "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
   "   | 20231010-Veri-Modelleme-egzersiz | 20231102   |
   "
-	let my_range = a:firstline.",".a:lastline
+	let first = a:firstline
+	let last = a:lastline
+
+	let my_range = first.",".last
+
 	" Delete extra tab characters at the end of lines
 	" Example:
 	" supplier_id	project_id	$
@@ -1409,9 +1557,17 @@ function! IsTableTitle(str)
 	" Example: [Supplier-Project]		
   "
 	let str = a:str
-  let sub = match(str, '^\s*\(\[[^\]]\+\]\)\s*$')
-  let result = sub > -1
-	echo result
+
+	" [Supplier-Project]		
+  let charnum01 = match(str, '^\s*\(\[[^\]]\+\]\)\s*$')
+  let res01 = charnum01 > -1
+	echo res01
+
+	" Table 1: Call option					
+  " let charnum02 = match(str, '^\s*Table\s*.*$')
+  let charnum02 = match(str, '^\s*[#-]*\s*Table\s*.*$')
+  let res02 = charnum02 > -1
+	let result = res01 || res02
   return result
 endfunction
 command! IsTableTitle call IsTableTitle(getline("."))
@@ -1451,7 +1607,7 @@ function! ConvertExcel2Table2() range  " SPC mT tsv table to pipe separated mark
   if IsTableTitle(first_line)
 		let start = start + 1
   endif
-	
+
 	exe "" . start . "," . end . "ConvertExcel2Table"
 	" go to the header
 	normal! {j
@@ -1459,8 +1615,14 @@ function! ConvertExcel2Table2() range  " SPC mT tsv table to pipe separated mark
 	" 2,1ConvertExcel2Table
 
 	TableModeEnable
-	" Put separator line under header
+	"
+	" Put separator line above and under header
+	exe "".end."G"
 	normal o||
+	exe "".start."G"
+	normal o||
+	exe "".start."G"
+	normal O||
 	TableModeRealign
 
 endfunction
@@ -1508,7 +1670,7 @@ command! -range=% RemoveDoubleBackSlashes <line1>,<line2>s/\\\\\\\\/\\\\/g
 command! ReplaceSlashWithBackSlashes s/\\\\/\\/g
 command! ReplaceInvisibleSpaces bufdo %s/ / /ge | update
 
-nnoremap tüo A - opt
+" nnoremap tüo A - opt
 
 function! ConvertYuml2Summary()
 	norm! Go## Summary
@@ -1802,7 +1964,7 @@ function! ScrapeApiServices()
 
 	g/^\s*$/d
 	g/<url/d
-	
+
 	" list only service titles
 	v/^\d/d
 	%s/^\d\+\.*\s*//
@@ -2237,8 +2399,8 @@ function! HandleURL()
     echo "No URI found in line."
   endif
 endfunction
-map tu :call HandleURL()<cr>
-nnoremap ti :!open -a Safari %<CR><CR>
+" map tu :call HandleURL()<cr>
+" nnoremap ti :!open -a Safari %<CR><CR>
 
 set history=10000
 
@@ -2300,26 +2462,61 @@ function! OpenFilePathInRegisterAsUtl()
 endfunction
 command! OpenFilePathInRegisterAsUtl call OpenFilePathInRegisterAsUtl()
 
-nnoremap İ :Utl<CR>
+" nnoremap İ :Utl<CR>
+nnoremap İ :GotoDef<CR>
 " replaced with Ü/Sgd
 " nnoremap <leader>İ :ObsidianFollowLink<CR>
 nnoremap gİ :OpenFilePathInRegisterAsUtl<CR>
 nnoremap gÜ :OpenWikilinkInRegister<CR>
 
-": navigating files {{{ id=g15014
+": navigating files {{{
+" id=g15014
 
-" rfr: [[20231014-Call-a-Lua-Function-from-within-Vimscript]] <url:file:///~/prj/study/logseq-study/pages/20231014-Call-a-Lua-Function-from-within-Vimscript.md#r=g15013>
+" rfr: [[20231014-Call-a-Lua-Function-from-within-Vimscript]] 
 
 lua << EOF
 function _G.find_files_from_wikilink(filename)
+	-- id:: dde72887-af77-4e08-b7fa-3808dba1608e
 	local scopes = require("neoscopes")
+  scopes.set_current("all")
 	require("telescope.builtin").find_files({
 		search_dirs = scopes.get_current_dirs(),
-		search_file = filename
+		search_file = filename,
+    -- find_command = "rg,--ignore,--hidden,files"
+    -- find_command = { "rg", "--ignore"},
+    -- find_command = { "rg"},
+    find_command = { "fd"},  -- respect .gitignore
+	})
+	return 0
+end
+
+function _G.find_files_from_wikilink_nogitignore(filename)
+  -- id:: 4a45f391-42cb-4edd-af47-1bb5513eb689
+	local scopes = require("neoscopes")
+  scopes.set_current("all")
+	require("telescope.builtin").find_files({
+		search_dirs = scopes.get_current_dirs(),
+		search_file = filename,
 	})
 	return 0
 end
 EOF
+
+function! GetWikilinkArg(filename)
+	" input: 
+	"   20231014-rtc-Yatirim101-Videolari
+	"   f/fkr
+	"
+	" result:
+	"		20231014-rtc-Yatirim101-Videolari
+	"		f___fkr
+	"
+  let f01 = a:filename
+	" [[f/fkr]] -> f___fkr
+  let f03 = substitute(f01, '\/', '___', 'g')
+	return f03
+endfunction
+command! GetWikilinkArg call GetWikilinkArg()
 
 function! GetWikilink()
 	" id:: 147ef2c8-6835-456c-9b88-58798f983c04
@@ -2335,10 +2532,8 @@ function! GetWikilink()
 	normal! "fyi]
   let f01 = @f
   let f02 = substitute(f01, '[\[\]]', '', 'g')
-	" [[f/fkr]] -> f___fkr
-  let f03 = substitute(f02, '\/', '___', 'g')
-  let f04 = substitute(f03, '.*', '\0.md', '')
-	return f04
+  let f03 = GetWikilinkArg(f02)
+	return f03
 endfunction
 command! GetWikilink call GetWikilink()
 
@@ -2362,9 +2557,8 @@ function! GotoWikilinkAsArg(wikilink) "
 	call v:lua.find_files_from_wikilink(f04)
   return f04
 endfunction
-command! GotoWikilink call GotoWikilink()
 
-function! GotoWikilink(wikilink) " SPC fn id=g15020
+function! GotoWikilink(wikilink, ...) " SPC fn id=g15020
   " id:: a25bbc96-8bc0-41d4-944f-152f01f2a36c
 	" input: 
 	"   cursor is on top of the following word:
@@ -2375,11 +2569,17 @@ function! GotoWikilink(wikilink) " SPC fn id=g15020
 	"
 	"   open the following file in telescope: 20231014-rtc-Yatirim101-Videolari.md
 	"
+  let nogitignore = get(a:, 1, 0)
+	lua require('neoscopes').set_current('all')
 	let wikilink = a:wikilink
 	if empty(wikilink)
 		let wikilink = GetWikilink() 
 	endif
-	call v:lua.find_files_from_wikilink(wikilink)
+  if (nogitignore == 1)
+    call v:lua.find_files_from_wikilink_nogitignore(wikilink)
+  else
+    call v:lua.find_files_from_wikilink(wikilink)
+  endif
   return wikilink
 endfunction
 command! GotoWikilink call GotoWikilink("")
@@ -2402,12 +2602,17 @@ EOF
 lua << EOF
 function _G.find_ref_from_logseq_block_ref(search_string)
 	-- rfr: _G.live_grep2 = function() -- <url:file:///~/prj/private_dotfiles/.config/nvimconfigs/lazyvim/init.lua#r=g15021>
+	-- local scopes = require("neoscopes")
 	local scopes = require("neoscopes")
+  scopes.set_current("all")
+  -- scopes.set_current("myrepo")
+  -- scopes.set_current("sm:std-myr")
+  -- print(vim.inspect(scopes.get_current_dirs()))
   require("telescope.builtin").grep_string({
     search_dirs = scopes.get_current_dirs(),
+    -- search_dirs = {"/Users/mertnuhoglu/prj"},
 		glob_pattern = "*.{md|vim|lua|txt|csv|tsv|otl|clj|cljc|cljs|js}",
 		search = search_string
-
   })
 	return 0
 end
@@ -2434,7 +2639,6 @@ function! GotoBlockRefFromBlockLink() "
 
   return f03
 endfunction
-command! GotoBlockRef call GotoBlockRef()
 
 function! GotoBlockRefFromIdDef() " 
 	" id:: 34934eee-b945-47a4-a6b7-87a608ad6950
@@ -2458,42 +2662,47 @@ function! GotoBlockRefFromIdDef() "
 endfunction
 command! GotoBlockRefFromIdDef call GotoBlockRefFromIdDef()
 
-function! GotoBlockRef() " SPC fD id=g15022
+function! GotoRef() " SPC fD id=g15022
+	" id:: 756f4160-3a26-4d36-849b-2dbcdce28fc5
 	" input: 
 	"   cursor is on top of the following word:
 	"
-	"   ((2f128e0f-....-46ad-894a-de3265ae8b26 ))
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
 	"
 	" result:
 	"
 	"   search the following string in telescope: 
-	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"     2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
-	let line = Strip2(getline("."))
-	let is_blocklink = GrepInString("))", line)
-	let is_wikilink = GrepInString("]]", line)
-	let next_line = getline(line('.') + 1)
-	let is_block_def = GrepInString("\\<id:: ", next_line)
-
-	" normal! "fyi)
-	"  let f01 = @f
-	"  let f02 = substitute(f01, '[()]', '', 'g')
-	" let f03 = "((" . f02 . "))"
-	" let f03 = f02
-	" " echo f03
-	" call v:lua.find_ref_from_logseq_block_ref(f03)
-
+	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl] = GetRef()
+	normal! mI
 	if is_blocklink
-		call GotoBlockRefFromBlockLink()
-	elseif is_wikilink
-		call GotoWikilink()
-	elseif is_block_def
-		call GotoBlockRefFromIdDef()
+		call GotoBlockRef(ref)
 	endif
-	"
-  " return f03
+	if is_wikilink
+		" call GotoWikilink(ref)
+		let ref02 = substitute(ref, '___', '\/', 'g')
+    call GotoBlockRef(ref02)
+	endif
+	if is_filepath
+		" exe "e " . ref
+    call GotoBlockRef(ref)
+	endif
+	if is_utl
+		" exe "Utl openLink " . ref
+    call GotoBlockRef(ref)
+	endif
+	if is_wikitag
+		" call GotoWikilink(ref)
+    call GotoBlockRef(ref)
+	endif
+	if ref == ""
+		Utl
+	endif
+
 endfunction
-command! GotoBlockRef call GotoBlockRef()
+command! GotoRef call GotoRef()
 
 function! GetBlockRef() 
 	" id:: 008f6037-114b-477d-875d-c4dd29aba1e0
@@ -2504,22 +2713,102 @@ function! GetBlockRef()
 	"
 	" result:
 	"
-	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"     2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	normal! "fyi)
   let f01 = @f
   let f02 = substitute(f01, '[()]', '', 'g')
-	let f03 = "id:: " . f02
-	return f03
+	return f02
 endfunction
 command! GetBlockRef call GetBlockRef()
 
-function! GotoBlockDef(ref) " SPC fd id=g15023
+function! GotoBlockRef(ref) " SPC fD 
+	" input: 
+	"   2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let ref = a:ref
+	if empty(ref)
+		let ref = GetBlockRef() 
+	endif
+
+	let ref02 = ref
+
+	echo ref02
+	call v:lua.find_ref_from_logseq_block_ref(ref02)
+  return ref02
+endfunction
+command! GotoBlockRef call GotoBlockRef("")
+
+function! GotoBlockDefBuffer() " g*
+	" id:: 1494d523-ca2b-47e4-a556-fec429ca1427
+	" input: 
+	"   some text with ((<uuid>))
+	"
+	" result:
+	"   search the following string in buffer: <uuid>
+	"
+	let line = Strip2(getline("."))
+	let [is_blocklink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
+	let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', line)
+	if is_blocklink
+		let ref = ref01
+	endif
+	if is_block_def
+		let ref = ref03
+	endif
+
+	let @/ = ref
+	normal! N
+  return ref
+endfunction
+command! GotoBlockDefBuffer call GotoBlockDefBuffer()
+
+function! GotoBlockDefBufferInOtherWindow() " g*
+	" input: 
+	"   some text with ((<uuid>))
+	"
+	" result:
+	"   search the following string in buffer: <uuid>
+	"
+	let ref = GotoBlockDefBuffer()
+	wincmd p
+	normal! N
+	normal! zv
+	normal! V
+  return ref
+endfunction
+command! GotoBlockDefBufferInOtherWindow call GotoBlockDefBufferInOtherWindow()
+
+nnoremap g* :GotoBlockDefBuffer<CR>
+nnoremap gq :GotoBlockDefBuffer<CR>
+nnoremap gb :GotoBlockDefBufferInOtherWindow<CR>
+
+function! GotoLine() " gQ 
+	" id:: 1aa8bd57-b350-4472-a805-dcc5ee93c865
+	" input: 
+	"
+	" result:
+	"
+	let line = Strip2(getline("."))
+	let line02 = substitute(line, "^\s*[-#]* \?", "", "")
+	let line03 = substitute(line02, "^- ", "", "")
+
+	let @/ = line03
+	normal! N
+  return line03
+endfunction
+command! GotoLine call GotoLine()
+nnoremap gQ :GotoLine<CR>
+
+function! GotoBlockDef(ref) " SPC fd 
 	" id:: 4a07276d-1ed9-40a2-9f12-c816bbf46ecd
 	" input: 
-	"   cursor is on top of the following word:
-	"
-	"   ((2f128e0f-....-46ad-894a-de3265ae8b26 ))
+	"   2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	" result:
 	"
@@ -2531,9 +2820,11 @@ function! GotoBlockDef(ref) " SPC fd id=g15023
 		let ref = GetBlockRef() 
 	endif
 
-	echo ref
-	call v:lua.find_ref_from_logseq_block_ref(ref)
-  return ref
+	let ref02 = "id:: " . ref
+
+	echo ref02
+	call v:lua.find_ref_from_logseq_block_ref(ref02)
+  return ref02
 endfunction
 command! GotoBlockDef call GotoBlockDef("")
 
@@ -2542,8 +2833,8 @@ function GrepInString(pattern, string)
 
 	let pattern = a:pattern
 	let string = a:string
-  let matches = match(string, pattern)
-  return matches > 0
+  let matches = matchstr(string, pattern)
+  return [!empty(matches), matches]
 endfunction
 
 function Rcb20231018_02()
@@ -2564,28 +2855,155 @@ function! GetRef()
 	"
 	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
 	"   [[20231018-Vimscript-Grep-Function]]
+	"   ~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim
+	"   ~/projects/myrepo/work/work.otl
+	"   #ndx Title
 	"
 	" result:
 	"
 	"   2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
 	let line = Strip2(getline("."))
-	let is_blocklink = GrepInString("))", line)
-	let is_wikilink = GrepInString("]]", line)
-	let next_line = getline(line('.') + 1)
-	let is_block_def = GrepInString("\\<id:: ", next_line)
-	if is_blocklink
-		let ref = GetBlockRef() 
-	endif
-	if is_wikilink
-		let ref = GetWikilink() 
-	endif
-	return [ref, is_blocklink, is_wikilink]
+	return GetRefArg(line)
 endfunction
 command! GetRef call GetRef()
 
-function! GotoBlockOrWikilink() " SPC fd id=g15045
+function! GetRefArg(line) 
+	" input: 
+	"
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"   ~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim
+	"   ~/projects/myrepo/work/work.otl
+	"   #ndx Title
+	"
+	" result:
+	"
+	"   2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let line = a:line
+	let ref = ""
+	let [is_blocklink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
+	" let [is_linelink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
+	let [is_wikilink, ref02] = GrepInString('\(\[\[\)\@<=[^\]]\+\(]]\)\@=', line)
+	let next_line = getline(line('.') + 1)
+	let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', line)
+	let [is_filepath, ref04] = GrepInString('\(\~\|\/Users\)\(\/\.\?\w\+[-_]\?\w*\)\+\.\w\+', line)
+  " > <url:file:///~/projects/study/logbook/log_20220927.md#r=g13408>
+	let [is_utl, ref05] = GrepInString('\s<url:file:\/\/\/[^>]\+>', line)
+	let [is_wikitag, ref06] = GrepInString('\(#\)\@<=\([^: ]\+\)', line)
+	if is_utl
+		let is_filepath = 0
+	endif
+	if is_wikitag
+		let ref = ref06
+	endif
+	if is_blocklink
+		let ref = ref01
+	endif
+	if is_wikilink
+		let ref = GetWikilinkArg(ref02)
+	endif
+	if is_filepath
+		let ref = ref04
+	endif
+	if is_utl
+    let ref05b = substitute(ref05, ".*<url:file:\/\/\/", "", "")
+    let ref = substitute(ref05b, ">\s*", "", "")
+	endif
+	return [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl]
+endfunction
+command! GetRefArg call GetRefArg()
+
+function! GotoDef(...) " SPC fd 
 	" id:: 5caa9c16-3450-426e-aa81-5b1879e1eb41
+	" input: 
+	"   cursor is on top of the following word:
+	"
+	"   title ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let line = Strip2(getline("."))
+	" By default: don't respect gitignore
+  let nogitignore = get(a:, 1, 0)
+	return GotoDefArg(line, nogitignore)
+endfunction
+command! GotoDef call GotoDef()
+
+function! GotoDefArg(line, nogitignore) " 
+	" input: 
+	"
+	"   title ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let line = a:line
+  let nogitignore = a:nogitignore
+	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl] = GetRefArg(line)
+	" normal! mI
+	if is_blocklink
+		call GotoBlockDef(ref)
+	endif
+	if is_wikilink
+		call GotoWikilink(ref, nogitignore)
+	endif
+	if is_filepath
+		exe "e " . ref
+	endif
+	if is_utl
+		exe "Utl openLink " . ref
+	endif
+	if is_wikitag
+		call GotoWikilink(ref, nogitignore)
+	endif
+	if ref == ""
+		Utl
+	endif
+endfunction
+command! GotoDefArg call GotoDefArg()
+
+function! GotoBlockOrWikilink() " SPC fld 
+  " id=g15045
+	call GotoDef()
+endfunction
+command! GotoBlockOrWikilink call GotoBlockOrWikilink()
+
+function! GotoDefFromRegister() " 
+	" id:: e5644814-1645-4ea0-a93d-cc7e02a0c661
+	" Take default register's content
+	" Run GotoDef with that content
+	" input: Some line is in the register
+	"
+	"   title ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"
+	" result:
+	"
+	"   search the following string in telescope: 
+	"     id:: 2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+	let line = @*
+	return GotoDefArg(line, 0)
+endfunction
+command! GotoDefFromRegister call GotoDefFromRegister()
+
+function! GotoBlockOrWikilinkNogitignore() " SPC flD
+  " id:: b6911bef-e4a2-4fa6-bdbb-3e5ac7da7c80
+  " don't respect .gitignore in find_files()
+	call GotoDef(1)
+endfunction
+command! GotoBlockOrWikilinkNogitignore call GotoBlockOrWikilinkNogitignore()
+
+function! GotoBlockOrWikilink20231204() 
+	" id:: 040394ed-ed1a-4d11-b26a-5d7bb0054993
 	" input: 
 	"   cursor is on top of the following word:
 	"
@@ -2605,24 +3023,44 @@ function! GotoBlockOrWikilink() " SPC fd id=g15045
 		call GotoWikilink(ref)
 	endif
 endfunction
-command! GotoBlockOrWikilink call GotoBlockOrWikilink()
-
 function! GotoBlockOrWikilinkTab() " SPC ft
 	" id:: 7fb64f86-491f-44d8-9087-aa657899006f
 	" GotoBlockOrWikilink in a new tab
 	" ((5caa9c16-3450-426e-aa81-5b1879e1eb41)) || function! GotoBlockOrWikilink() " SPC fd
 	"
-	let [ref, is_blocklink, is_wikilink] = GetRef()
-	if is_blocklink
-		tabnew
-		call GotoBlockDef(ref)
-	endif
-	if is_wikilink
-		tabnew
-		call GotoWikilink(ref)
-	endif
+  mark c
+  tabedit %
+  normal! `c
+  GotoBlockOrWikilink
 endfunction
 command! GotoBlockOrWikilinkTab call GotoBlockOrWikilinkTab()
+
+function! GotoBlockOrWikilinkVSplit() " SPC flv
+  " id:: a49cfd28-e09b-41ff-b5ad-86c931d5722c
+	" GotoBlockOrWikilink in a new vertical split
+	" ((5caa9c16-3450-426e-aa81-5b1879e1eb41)) || function! GotoBlockOrWikilink() " SPC fd
+	"
+  " datomic.otl || ((8361a15c-7452-4dc2-babd-5faf76e3fe47))
+  mark c
+  wincmd v
+  " wincmd l
+  normal! `c
+  GotoBlockOrWikilink
+endfunction
+command! GotoBlockOrWikilinkVSplit call GotoBlockOrWikilinkVSplit()
+
+function! GotoBlockOrWikilinkSplit() " SPC fls
+	" GotoBlockOrWikilink in a new split
+	" ((5caa9c16-3450-426e-aa81-5b1879e1eb41)) || function! GotoBlockOrWikilink() " SPC fd
+	"
+  " datomic.otl || ((8361a15c-7452-4dc2-babd-5faf76e3fe47))
+  mark c
+  wincmd s
+  " wincmd l
+  normal! `c
+  GotoBlockOrWikilink
+endfunction
+command! GotoBlockOrWikilinkSplit call GotoBlockOrWikilinkSplit()
 
 ": }}}
 
@@ -2639,7 +3077,7 @@ command! Goto2 call Goto2()
 lua << EOF
 function _G.find_note2()
 	local util = require "obsidian.util"
-	-- local client_dir = "/Users/mertnuhoglu/gdrive/grsm/opal/docs-grsm/pages"
+	-- local client_dir = "/Users/mertnuhoglu/prj/collabry/cldocs/cllogseq/pages"
 	-- local note_file_name = "20230914-pln-Veri-Modellemesi-Egitimi.md"
 	-- local client_dir = "/Users/mertnuhoglu/prj/myrepo/logseq-myrepo/pages"
 	-- local note_file_name = "20231013-Karar-almanin-beni-korkutan-taraflari-var.md"
@@ -2664,4 +3102,40 @@ command! FindNote20231015 call FindNote20231015()
 ": }}}
 
 
+function! DebugRegex20231231() 
+	let line03 = "#stnd title"
+	let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '`\1`\0', 'g')
+	echo line04
+	"> `d`#stnd title
+	let line04 = substitute(line03, '#\(.*\):\?', '`\1`\0', 'g')
+	echo line04
+	"> `stnd title`#stnd title
+	let line04 = substitute(line03, '#\([^: ]\+\):\?', '`\1`\0', 'g')
+	echo line04
+	"> `stnd title`#stnd title
+	let line03 = "#stnd: title"
+	let line04 = substitute(line03, '#\([^: ]\+\):\?', '`\1`\0', 'g')
+	echo line04
+	"> `stnd`#stnd: title
+	let line03 = "#stnd #f/qry: title"
+	let line04 = substitute(line03, '#\([^: ]\+\)[: ]', '`\1`\0', 'g')
+	echo line04
+	"> `stnd`#stnd `f/qry`#f/qry: title
+	let line04 = substitute(line03, '#\([^: ]\+\)[: ]', '`\1`', 'g')
+	"> `stnd``f/qry` title
+	let line04a = substitute(line03, '#\([^: ]\+\)[: ]', '`\1`', 'g')
+	let line04 = substitute(line04a, '\(\w\)``\(\w\)', '\1 \2', 'g')
+	"> `stnd f/qry` title
+endfunction
+command! DebugRegex20231231 call DebugRegex20231231()
+
 ": }}}
+"
+function! Tab3GotoDef() 
+	" new tab and GotoDef
+	" mnemonics: & -> 8 -> 3
+	tab split
+	GotoDef
+endfunction
+command! Tab3GotoDef call Tab3GotoDef()
+
