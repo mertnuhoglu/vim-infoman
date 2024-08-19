@@ -545,13 +545,15 @@ function! LogseqBlockTitleExtract() "  id=g15048
   " 	->
   " 	- ## f/log Convert tsv table to pipe separated markdown table + format alignment
 	let line03 = substitute(line02b, '#f\/log ', 'f/log ', 'g')
+	" TODO kelimesinin başına `#` ekleyelim
+	let line03b = substitute(line03, ' TODO', ' #TODO', '')
 
 	" prb: `#tag` handling:
 	" a01: Remove `#tag` or `#ns/tag` or `#tag:` inside line
 	" let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '', 'g')
 	" a02: Wrap with backtick
 	"> line03: #stnd #f/qry title
-	let line04a = substitute(line03, '#\([^: ]\+\)\([: ]\|$\)\@=', '`\1`', 'g')
+	let line04a = substitute(line03b, '#\([^: ]\+\)\([: ]\|$\)\@=', '`\1`', 'g')
 	"> line04a: `stnd``f/qry` title
 	let line04b = substitute(line04a, '\(\w\)` `\(\w\)', '\1 \2', 'g')
 	"> line04b: `stnd f/qry` title
@@ -629,6 +631,7 @@ endfunction
 command! LogseqUuidExtract call LogseqUuidExtract()
 
 function! LogseqUuidGenerate() " 
+	" id:: 28b54720-15de-41f1-959b-04d7d59faa22
 	" global logseq compatible ID
 	"
 	" input (file):
@@ -662,6 +665,29 @@ function! RefId()  " SPC ru
 endfunction
 command! RefId call RefId()
 
+function! RefId4Otl()  " SPC rou
+  " id:: 36950b30-0f21-45d7-9ad9-8bd51f1072b9
+	" global logseq compatible ID
+  "
+	"
+	" input (file):
+  "
+	"   - opt5: make it a function 
+	"     id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
+  "
+	" output (text):
+  "
+  "   opt5: make it a function
+	"     rfr: opt5: make it a function  || ((xxxxxx-7560-47c5-8f8b-c93e79250e1a))
+	"
+  let ref = RefId()
+  let ttl = matchstr(ref, '[^|]\+')
+  let result = ttl . "\n" . '  src: ' . ref . "\n"
+  let @* = result
+	return result
+endfunction
+command! RefId4Otl call RefId4Otl()
+
 function! RefIdShort()  " SPC rs
 	" id:: 851c7dc2-a079-4b67-9c55-7e09281ab540
 	" short uuid
@@ -686,7 +712,7 @@ function! RefIdShort()  " SPC rs
 endfunction
 command! RefIdShort call RefIdShort()
 
-function! RefIdLogseq() " SPC ru  id=g14993
+function! RefIdLogseq() " 
 	" id:: 79383fcf-a034-4592-b4b1-5f78daee66d6
 	" global logseq compatible ID
 	"
@@ -778,19 +804,26 @@ endfunction
 
 function! RefIdUtl()  " SPC ri id=g12680
 	" id:: 48b0ce88-a69c-4499-8387-5e89090dcf34
-	" @deprecated: Replaced with RefId
+	" @deprecated: Replaced with RefId || ((7beea565-31fa-47a9-9d63-6202bfe0b7d4))
 	"
   " input:
 	"   wifi connection issues id=g_10099
   " out:
   "   wifi connection issues <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_10099>
 
+	" input:
+	"   - # 20240818-Test-Yonetim-Sistemi #f/isfkr #f/tst
+	" out:
+	"   20240818 Test Yönetim Sistemi #f/isfkr #f/tst
+	"
 	" <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
 
 	let url = CopyUrl() 
   "> <url:file:///~/projects/myrepo/stuff.otl#r=n_085>
 
 	let line01 = Strip(getline(".")) 
+	"> - # 20240818-Test-YOnetim-Sistemi #f/isfkr #f/tst
+	" 
 	let line02 = substitute(line01, ':\?\s*$', '\1', '')
   "> wifi connection issues id=g_10099
 
@@ -836,9 +869,10 @@ function! RefIdUtlJournal()  " SPC rj id=g13761
 
   " let rfr01 = RefIdUtl()
   let rfr01 = Strip(RefIdUtl())
+	let rfr01b = RemoveHashtags(rfr01)
 
   " baştaki "-;# gibi sembolleri sil
-  let rfr02 = substitute(rfr01, '^\s*[-;#":>]*', '', '')
+  let rfr02 = substitute(rfr01b, '^\s*[-;#":>]*', '', '')
   " ShadowCljs:-IntelliJ-ile-REPL-Baglantisi <url:file:///~/prj/collabry/cldocs/cllogseq/pages/ShadowCljs--IntelliJ-ile-REPL-Baglantisi.md#r=g13764>
   " etrafına [[..]] koy
   let rfr03 = substitute(rfr02, '^\(\s*\)\([^< ]*\)\s*\(.*\)', '\1[[\2]] \3', '')
@@ -938,9 +972,11 @@ function! RefIdAnywhere()  "  SPC rb
   "   # 20231030-Wordpress-Kurulum id=g15120
 	"   # ndx-journal
 	"   # ndx/vim/logseq
+  "   - # 20231108-twtp
+	"   - # 20240818-Test-Yonetim-Sistemi #f/isfkr #f/tst
   "
 	try
-		/^-\?\s*#\+ [A-Za-z0-9/\-_]\+\s*\(id=\w\+\)\?\s*$
+		/\v^-?\s*#+ [A-Za-z0-9/\-_]+\s*(\s*#\w+\/\w+)*\s*$
 		let result = RefIdUtlJournal()
 		echo 'Copied: ' . result
 		return result
@@ -1059,13 +1095,18 @@ function! IdPair()
 	" id:: a9b3bd34-46d9-4e2a-9b19-984b3d2c853a
   normal! mt
 	normal! 's
-	let src = RefIdNewLogseq()
+	let src = RefId()
+  let prn_spaces = repeat(' ', indent('.') + 2)
 	normal! 't
-	execute "normal! o\<Tab>return: " . src . "\<Esc>"
+	" execute "normal! o\<Tab>return: " . src . "\<Esc>"
+  let rtrn = "  rtrn: " . src
+	call append(line("."), [rtrn])
 	normal! 't
-	let dest = RefIdNewLogseq()
+	let dest = RefId()
 	normal! 'sj
-	execute "normal! odone: " . dest . "\<Esc>"
+	" execute "normal! odone: " . dest . "\<Esc>"
+  let bdyy = prn_spaces . "bdyy: " . dest
+	call append(line("."), [bdyy])
 endfunction
 command! IdPair call IdPair()
 
@@ -1534,6 +1575,8 @@ endfunction
 
 function! GetBlockStartEnd()
 	" id:: b50e06f3-39e8-4b90-b059-bfa743ebaee4
+  " rfr: related: function! GetBlockNextStartEnd() || ((cfbabc88-9dc7-4999-9309-f0f011a4dbca))
+  "
 	" Return start and end line numbers of existing block
 	" Note: A block is group of lines that are separated from the neighbor
 	" blocks by a blank line
@@ -1541,13 +1584,30 @@ function! GetBlockStartEnd()
 	CleanEmptySpaceLines
 	let current_line = line(".")
 	" Delete space characters in space-only lines
+  call append(line('$'), '')
+  " There must be a blank line or the `end` variable is not the actual `end`
+  " of the block
 
+  let doc_end = line("$")
   normal! {)
 	let start = line(".")
 	normal! }
 	let end = line(".") - 1
-	call cursor(current_line, 1)
+	call cursor(current_line, 1)  " goto line and col
 
+	return [start, end]
+endfunction
+
+function! GetBlockNextStartEnd()
+  " id:: cfbabc88-9dc7-4999-9309-f0f011a4dbca
+  " rfr: related: function! GetBlockStartEnd() || ((b50e06f3-39e8-4b90-b059-bfa743ebaee4))
+  "
+	" Return start and end line numbers of next block
+	"
+	let [start, end] = GetBlockStartEnd()
+	normal! }
+
+  " wip
 	return [start, end]
 endfunction
 
@@ -2601,6 +2661,7 @@ EOF
 
 lua << EOF
 function _G.find_ref_from_logseq_block_ref(search_string)
+  -- id:: 9ce6a7fd-0e11-4647-a5a0-d8d283795a7a
 	-- rfr: _G.live_grep2 = function() -- <url:file:///~/prj/private_dotfiles/.config/nvimconfigs/lazyvim/init.lua#r=g15021>
 	-- local scopes = require("neoscopes")
 	local scopes = require("neoscopes")
@@ -2616,6 +2677,21 @@ function _G.find_ref_from_logseq_block_ref(search_string)
   })
 	return 0
 end
+
+function _G.find_ref_from_logseq_block_ref_grepper(search_string)
+  -- id:: 4e51afc8-ae06-4e78-988c-a08ee1ef8b9d
+  -- rfr: prn: function _G.find_ref_from_logseq_block_ref(search_string) || ((9ce6a7fd-0e11-4647-a5a0-d8d283795a7a))
+	local scopes = require("neoscopes")
+  scopes.set_current("all")
+  require("telescope.builtin").grep_string({
+    search_dirs = scopes.get_current_dirs(),
+    -- search_dirs = {"/Users/mertnuhoglu/prj"},
+		glob_pattern = "*.{md|vim|lua|txt|csv|tsv|otl|clj|cljc|cljs|js}",
+		search = search_string
+  })
+	return 0
+end
+
 EOF
 
 function! GotoBlockRefFromBlockLink() " 
@@ -2662,7 +2738,7 @@ function! GotoBlockRefFromIdDef() "
 endfunction
 command! GotoBlockRefFromIdDef call GotoBlockRefFromIdDef()
 
-function! GotoRef() " SPC fD id=g15022
+function! GotoRef(grepper) " SPC fD id=g15022
 	" id:: 756f4160-3a26-4d36-849b-2dbcdce28fc5
 	" input: 
 	"   cursor is on top of the following word:
@@ -2675,34 +2751,43 @@ function! GotoRef() " SPC fD id=g15022
 	"   search the following string in telescope: 
 	"     2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
-	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl] = GetRef()
+
+  let grepper = a:grepper
+	if empty(grepper)
+		let grepper = "Telescope"
+	endif
+
+	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def] = GetRef()
 	normal! mI
 	if is_blocklink
-		call GotoBlockRef(ref)
+		call GotoBlockRef(ref, grepper)
 	endif
 	if is_wikilink
 		" call GotoWikilink(ref)
 		let ref02 = substitute(ref, '___', '\/', 'g')
-    call GotoBlockRef(ref02)
+    call GotoBlockRef(ref02, grepper)
 	endif
 	if is_filepath
 		" exe "e " . ref
-    call GotoBlockRef(ref)
+    call GotoBlockRef(ref, grepper)
 	endif
 	if is_utl
 		" exe "Utl openLink " . ref
-    call GotoBlockRef(ref)
+    call GotoBlockRef(ref, grepper)
 	endif
 	if is_wikitag
 		" call GotoWikilink(ref)
-    call GotoBlockRef(ref)
+    call GotoBlockRef(ref, grepper)
+	endif
+	if is_block_def
+    call GotoBlockRef(ref, grepper)
 	endif
 	if ref == ""
 		Utl
 	endif
 
 endfunction
-command! GotoRef call GotoRef()
+command! GotoRef call GotoRef("")
 
 function! GetBlockRef() 
 	" id:: 008f6037-114b-477d-875d-c4dd29aba1e0
@@ -2722,7 +2807,8 @@ function! GetBlockRef()
 endfunction
 command! GetBlockRef call GetBlockRef()
 
-function! GotoBlockRef(ref) " SPC fD 
+function! GotoBlockRef(ref, grepper) " SPC fD 
+  " id:: ff7c2a40-903e-4c19-93f6-db4ece6cdc84
 	" input: 
 	"   2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
@@ -2736,13 +2822,22 @@ function! GotoBlockRef(ref) " SPC fD
 		let ref = GetBlockRef() 
 	endif
 
+  let grepper = a:grepper
+	if empty(grepper)
+		let grepper = "Telescope"
+	endif
+
 	let ref02 = ref
 
 	echo ref02
-	call v:lua.find_ref_from_logseq_block_ref(ref02)
+  if grepper == "Telescope"
+    call v:lua.find_ref_from_logseq_block_ref(ref02)
+  else
+    call GrepRef(ref02)
+  endif
   return ref02
 endfunction
-command! GotoBlockRef call GotoBlockRef("")
+command! GotoBlockRef call GotoBlockRef("", "")
 
 function! GotoBlockDefBuffer() " g*
 	" id:: 1494d523-ca2b-47e4-a556-fec429ca1427
@@ -2886,8 +2981,16 @@ function! GetRefArg(line)
 	let [is_blocklink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
 	" let [is_linelink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
 	let [is_wikilink, ref02] = GrepInString('\(\[\[\)\@<=[^\]]\+\(]]\)\@=', line)
-	let next_line = getline(line('.') + 1)
+
 	let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', line)
+	if !is_block_def
+    " echo "inside !is_block_def"
+    let next_line = getline(line('.') + 1)
+    let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', next_line)
+    " echo ref03
+	endif
+  " echo "02: " . ref03
+
 	let [is_filepath, ref04] = GrepInString('\(\~\|\/Users\)\(\/\.\?\w\+[-_]\?\w*\)\+\.\w\+', line)
   " > <url:file:///~/projects/study/logbook/log_20220927.md#r=g13408>
 	let [is_utl, ref05] = GrepInString('\s<url:file:\/\/\/[^>]\+>', line)
@@ -2895,6 +2998,10 @@ function! GetRefArg(line)
 	if is_utl
 		let is_filepath = 0
 	endif
+
+  if is_block_def
+    let ref = ref03
+  endif
 	if is_wikitag
 		let ref = ref06
 	endif
@@ -2911,7 +3018,7 @@ function! GetRefArg(line)
     let ref05b = substitute(ref05, ".*<url:file:\/\/\/", "", "")
     let ref = substitute(ref05b, ">\s*", "", "")
 	endif
-	return [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl]
+	return [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def]
 endfunction
 command! GetRefArg call GetRefArg()
 
@@ -2948,7 +3055,7 @@ function! GotoDefArg(line, nogitignore) "
 	"
 	let line = a:line
   let nogitignore = a:nogitignore
-	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl] = GetRefArg(line)
+	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def] = GetRefArg(line)
 	" normal! mI
 	if is_blocklink
 		call GotoBlockDef(ref)
@@ -2964,6 +3071,9 @@ function! GotoDefArg(line, nogitignore) "
 	endif
 	if is_wikitag
 		call GotoWikilink(ref, nogitignore)
+	endif
+	if is_block_def
+    call GotoBlockRef(ref, "")
 	endif
 	if ref == ""
 		Utl
