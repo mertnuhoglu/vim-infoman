@@ -1,41 +1,53 @@
 " vim:fileencoding=utf-8:ft=vim:foldmethod=marker
 " ((b50e06f3-39e8-4b90-b059-bfa743ebaee4)) || function! GetBlockStartEnd()
-" Basic commands:
+" BDocument-List-myr.mdasic commands:
+"
+" local function gotoDef() -- SPC ffe or İ || ((1348ce1d-805d-431c-a2a2-83d57b7e941f))
+	" mapping: İ -> gotoDef || ((283cfd73-703c-4374-a120-067e2ffaf9c2))
+	" command! GotoDef || ((d3246cd2-4b88-4427-926e-b75e1817c5c7))
+	" local function gotoDef() -- SPC ffe or İ || ((1348ce1d-805d-431c-a2a2-83d57b7e941f))
+	" core: function gotoDefArg(line) --  || ((52ee6fa0-f29d-4509-8cb8-a89b1ba01728))
+	" pattern-match: function! GetRefArg(line)  || ((c639de96-98d0-4152-8718-62bae2c089ce))
+" nnoremap <A-i> :GotoDef<CR> || ((3945064f-e78f-4af6-b62b-b062c45b6236))
+" function! GotoDef(...) " SPC fd  || ((5caa9c16-3450-426e-aa81-5b1879e1eb41))
+"	function! GotoDefArg(line, nogitignore) "  || ((b92df8f3-0ca4-4977-96ff-944d17e70498))
+"	function! GetRefArg(line)  || ((c639de96-98d0-4152-8718-62bae2c089ce))
 " function! RefId()  " SPC ru || ((7beea565-31fa-47a9-9d63-6202bfe0b7d4))
 " function! RefIdAnywhere()  "  SPC rb || ((2d02c19a-405d-45ba-8b5a-91ed92589e3f))
 " function! GotoBlockOrWikilink() " SPC fd || ((5caa9c16-3450-426e-aa81-5b1879e1eb41))
 " function! IdPair() || ((a9b3bd34-46d9-4e2a-9b19-984b3d2c853a))
+" function GrepInString(pattern, string) || ((254af958-f8a5-48be-8e35-9ea5fa71bdaa))
 " CopyUrl <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g_00009>
 " SPC ry function! RefIdNewS() <url:file:///~/projects/vim_repos/vim-infoman/plugin/vim-infoman.vim#r=g12690>
 " ((2e0bf50f-3b07-4974-a07e-f7e53441a2f6)) || function! RefIdNewLogseq() " SPC rU
 " SPC rj function! RefIdJournal()  <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g13761>
 " function! RefIdLogseq() " SPC ru  || ((79383fcf-a034-4592-b4b1-5f78daee66d6))
+" function! GotoBlockDefBuffer() " gq g* || ((1494d523-ca2b-47e4-a556-fec429ca1427))
 " RefIdS = IdP
 " RefLine
 " En2
 " function! RefIdUtl()  " SPC ri || ((48b0ce88-a69c-4499-8387-5e89090dcf34))
 " function! RefIdUtlJournal()  " SPC rj || ((352e0820-99e6-4dc1-bb55-028002a9f6d9))
 
-command! -bar Enew2 enew | set buftype=nofile
-command! Enew3 split | enew | set buftype=nofile
-command! En2 Enew2 
-cnoremap En2 Enew2
-cnoremap En3 Enew3
-function! Enew4()
-	norm gg"fyG
-	Enew3
-	norm "fP
-endfunction
-command! Enew4 call Enew4()
-function! EnewFile()
-	norm gg"syG
-	split
-	lcd %:h
-	pwd
-	enew
-	normal "sP
-endfunction
-command! EnewFile call EnewFile()
+let g:f = luaeval("require('user.mert-lua')")
+
+" let RefType: Enum for GetRefArg
+"   id:: 8d628ea5-0bae-4013-95bc-e4d35a160c89
+" rfr: used-in: function! GetRefArg(line)  || ((c639de96-98d0-4152-8718-62bae2c089ce))
+let g:RefType = {
+      \ 'blocklink': 'blocklink',
+      \ 'wikilink': 'wikilink',
+      \ 'wikitag': 'wikitag',
+      \ 'filepath': 'filepath',
+      \ 'utl': 'utl',
+      \ 'block_def': 'block_def',
+      \ 'require': 'require',
+      \ 'script_arg': 'script_arg',
+      \ 'quoted_filename': 'quoted_filename',
+      \ 'vimhelp': 'vimhelp',
+      \ 'unquoted_filename': 'unquoted_filename',
+      \ 'url': 'url',
+      \}
 
 " sort words in a line
 command! SortWords call setline('.', join(sort(split(getline('.'), ' ')), " "))
@@ -525,16 +537,9 @@ endfunction
 command! RefIdNewS call RefIdNewS()
 "command! IdG call RefIdNewS()
 
-function! LogseqBlockTitleExtract() "  id=g15048
-  " id:: 93c08786-6da0-4d2d-be2b-6ec588b05c04
-	" global logseq compatible ID
-	"
-	" input (file):
-  " - #dcsn Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
-  "   id:: c51669bf-833d-4790-b008-29b22f374c9a
-	" output (text):
-	normal! ^"ly$
-	let line = @l
+function! LogseqBlockTitleExtractPure(line)
+	let line = a:line
+
 	" <url:...> metnini silelim
 	" - #vim #myst function! GotoBlockOrWikilink() " SPC fd <url:file:///~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim#r=g15045>
 	let line02 = substitute(line, '\s*<url:file[^>]\+>', '', 'g')
@@ -549,15 +554,15 @@ function! LogseqBlockTitleExtract() "  id=g15048
 	let line03b = substitute(line03, ' TODO', ' #TODO', '')
 
 	" prb: `#tag` handling:
-	" a01: Remove `#tag` or `#ns/tag` or `#tag:` inside line
-	" let line04 = substitute(line03, '#\(\w\|[\/]\)\+:\?', '', 'g')
+	" a01: Remove `#tag` or `#ns/tag` or `#tag:` or `#ns/tag-word` inside line
+	let line04 = substitute(line03b, '#\(\w\|[-\/]\)\+:\?', '', 'g')
 	" a02: Wrap with backtick
 	"> line03: #stnd #f/qry title
-	let line04a = substitute(line03b, '#\([^: ]\+\)\([: ]\|$\)\@=', '`\1`', 'g')
+	" let line04a = substitute(line03b, '#\([^: ]\+\)\([: ]\|$\)\@=', '`\1`', 'g')
 	"> line04a: `stnd``f/qry` title
-	let line04b = substitute(line04a, '\(\w\)` `\(\w\)', '\1 \2', 'g')
+	" let line04b = substitute(line04a, '\(\w\)` `\(\w\)', '\1 \2', 'g')
 	"> line04b: `stnd f/qry` title
-	let line04 = substitute(line04b, '\(`[^`]\+`\)[: ]\+\(.\+\)', '\2 \1', 'g')
+	" let line04 = substitute(line04b, '\(`[^`]\+`\)[: ]\+\(.\+\)', '\2 \1', 'g')
 	"> line04: title `stnd f/qry`
 
   " Remove internal references inside line
@@ -582,10 +587,35 @@ function! LogseqBlockTitleExtract() "  id=g15048
 	" ->
 	" > defn -main
 	let line11 = substitute(line10, '^\s*(', '', '')
+	return line11
+endfunction
 
-  let @* = line11
-  let @l = line11
-  return line11
+function! LogseqBlockTitleExtractClipboard()
+  " id:: 4a0cafbc-d085-42ab-a1d5-8c7372ac658f
+  " date:: 20251124
+	let block = getreg('+')
+
+	let rs = LogseqBlockTitleExtractPure(block)
+  let @l = rs
+  return rs
+endfunction
+command! LogseqBlockTitleExtractClipboard call LogseqBlockTitleExtractClipboard()
+
+function! LogseqBlockTitleExtract() "  id=g15048
+  " id:: 93c08786-6da0-4d2d-be2b-6ec588b05c04
+	" global logseq compatible ID
+	"
+	" input (file):
+  " - #dcsn Karar hikayesi: ((fc8d3a93-debf-4203-b8aa-f824e5170d10)) Düzenli bir kalite güvence süreci oluşturalım
+  "   id:: c51669bf-833d-4790-b008-29b22f374c9a
+	" output (text):
+	normal! ^"ly$
+	let line = @l
+
+	let rs = LogseqBlockTitleExtractPure(line)
+  let @* = rs
+  let @l = rs
+  return rs
 endfunction
 command! LogseqBlockTitleExtract call LogseqBlockTitleExtract()
 
@@ -612,6 +642,7 @@ function! LogseqLineExtractWithoutIdString() "
   return line06
 endfunction
 command! LogseqLineExtractWithoutIdString call LogseqLineExtractWithoutIdString()
+
 function! LogseqUuidExtract() " 
 	" id:: 7562e184-6b4f-4bde-a20e-a6b3e55e6bdd
 	" global logseq compatible ID
@@ -632,6 +663,7 @@ command! LogseqUuidExtract call LogseqUuidExtract()
 
 function! LogseqUuidGenerate() " 
 	" id:: 28b54720-15de-41f1-959b-04d7d59faa22
+	" exmp: [[20250413-exmp-LogseqUuidGenerate.vim]]
 	" global logseq compatible ID
 	"
 	" input (file):
@@ -639,10 +671,32 @@ function! LogseqUuidGenerate() "
 	" output (file):
 	" - opt5: make it a function 
 	"   id:: xxxxxx-7560-47c5-8f8b-c93e79250e1a
-	normal! o  id::  
-	Generate uuid
-	normal! $x
-	normal! k^
+	" normal! o  id::  
+	" Generate uuid
+	" normal! $x
+	" normal! k^
+	" 20250413 exmp LogseqUuidGenerate
+	let uuid = GenUuid()
+	let ext = g:GetCFileExt()
+	let idline = "id:: " . uuid
+	if ext == 'md'
+		let line01 = idline
+	else
+		let line01 = Line2Comment4Ext(idline, ext)
+	endif
+	if ext == 'otl'
+		let indentation = repeat("\t", indent('.')/2 + 1)
+	else
+		let indentation = repeat(' ', indent('.') + 2)
+	endif
+	let line02 = indentation . line01
+	let dateLine01 = "date:: " . GetDt()
+	let dateLine02 = indentation . Line2Comment4Ext(dateLine01, ext)
+	if ext == 'md'
+		call append(line("."), line02)
+	else
+		call append(line("."), [line02, dateLine02])
+	endif
 endfunction
 command! LogseqUuidGenerate call LogseqUuidGenerate()
 
@@ -728,6 +782,12 @@ function! RefIdLogseq() "
 	let uuid_ref = "((" . uuid . "))"
 	let ref = uuid_ref . " || " . line
 	let ref2 = line . " || " . uuid_ref 
+
+  let fpath = g:GetCFilePath()
+  let lnum = line(".")
+  call g:f.rhset_refid_fp_lnum(uuid, fpath, lnum)
+  " id:: af615167-09dd-4528-98ee-d98e99fd2d33
+
 	let @r = ref2
 	let @u = ref
 	let @* = ref2
@@ -976,7 +1036,7 @@ function! RefIdAnywhere()  "  SPC rb
 	"   - # 20240818-Test-Yonetim-Sistemi #f/isfkr #f/tst
   "
 	try
-		/\v^-?\s*#+ [A-Za-z0-9/\-_]+\s*(\s*#\w+\/\w+)*\s*$
+		/\v^-?\s*#+ [A-Za-z0-9/\-_]+(\s+(\s*#\w+\/\w+)*)?\s*$
 		let result = RefIdUtlJournal()
 		echo 'Copied: ' . result
 		return result
@@ -989,6 +1049,7 @@ endfunction
 command! RefIdAnywhere call RefIdAnywhere()
 
 function! RefIdFromFileName()  "  SPC rB
+  " id:: c944e3f4-27c2-43ef-93cb-aecce7aaa7ea
 	" similar: function! RefIdAnywhere()  "  SPC rb || ((2d02c19a-405d-45ba-8b5a-91ed92589e3f))
 	"
 	" Input: (reads file name)
@@ -998,8 +1059,8 @@ function! RefIdFromFileName()  "  SPC rB
 	"
 	let f01 = expand("%:t")
 	" [[f___fkr]] -> f/fkr
-  let f02 = substitute(f01, '___', '\/', 'g')
-	let wikilink = substitute(f02, '.*', '[[\0]]', '')
+  " let f02 = substitute(f01, '___', '\/', 'g')
+	let wikilink = substitute(f01, '.*', '[[\0]]', '')
 	let @* = wikilink
 	echo wikilink
 	return wikilink
@@ -1091,21 +1152,22 @@ command! CopyRefLineAsPath call CopyRefLineAsPath()
 "	mark source (return place) as s
 "	mark destination (done place) as d
 " function! IdPair() id=g12688
-function! IdPair()
+function! IdPair() " SPC rp
 	" id:: a9b3bd34-46d9-4e2a-9b19-984b3d2c853a
   normal! mt
 	normal! 's
 	let src = RefId()
-  let prn_spaces = repeat(' ', indent('.') + 2)
-	normal! 't
-	" execute "normal! o\<Tab>return: " . src . "\<Esc>"
-  let rtrn = "  rtrn: " . src
-	call append(line("."), [rtrn])
+  let src_spaces = repeat(' ', indent('.') + 2)
 	normal! 't
 	let dest = RefId()
+  let dest_spaces = repeat(' ', indent('.') + 2)
+  let rtrn = dest_spaces . "rtrn:: " . src
+	" call append(line("."), [getline(line(".")+1), rtrn])
+  normal! j
+	call append(line("."), [rtrn])
 	normal! 'sj
 	" execute "normal! odone: " . dest . "\<Esc>"
-  let bdyy = prn_spaces . "bdyy: " . dest
+  let bdyy = src_spaces . "bdyy:: " . dest
 	call append(line("."), [bdyy])
 endfunction
 command! IdPair call IdPair()
@@ -1122,6 +1184,84 @@ function! IdPair20231216()
 	normal! 's
 	execute "normal! o\<Tab>done: " . line . "\<Esc>"
 endfunction
+
+function! Rcf20241021_IdPair8MvTop()
+	" id:: b194b94b-ccb4-4a02-9fd5-8eb768e57876
+	" code: function! IdPair8MvTop() || ((1be08918-2e40-4be4-8d72-514d378b52f8))
+endfunction
+
+function! GetCurrentFoldText()
+	" id:: 9edf511a-387b-431e-9890-5094d0c037de
+	" Vimscript: How to select all the text in the current closed fold? #f/prompt #prg/vim
+	"   id:: 5479baa3-1ee7-42f1-84a0-883be02eab01
+	"
+	" Usage:
+	"   let fold_contents = GetCurrentFoldText()
+	"   let fold_contents_string = join(GetCurrentFoldText(), "\n")
+	"
+	" [Claude](https://claude.ai/chat/3e5d85d9-8e4e-4ad2-b0c2-4590cf4530c2)
+	" I want to select this text and assign it to a variable in vimscript.
+	"
+	" Save the current cursor position
+	let l:save_cursor = getcurpos()
+
+	" Move to the start of the current fold
+	normal! [z
+	let l:start_line = line('.')
+
+	" Move to the end of the current fold
+	normal! ]z
+	let l:end_line = line('.')
+
+	" Get the text of the fold
+	let l:fold_text = getline(l:start_line, l:end_line)
+
+	" Restore the cursor position
+	call setpos('.', l:save_cursor)
+
+	" Return the text as a list of lines
+	return l:fold_text
+endfunction
+
+function! IdPair8MvTop()  " SPC rP
+	" id:: 1be08918-2e40-4be4-8d72-514d378b52f8
+	" depends-on: function! IdPair() || ((a9b3bd34-46d9-4e2a-9b19-984b3d2c853a))
+	"
+	" Works in work.otl
+	" input: (cursor on trgt line)
+	"
+	"       src: block 01
+	"       ⁁trgt: block 01
+	"       	line 02
+	"       ...
+	"     nxt
+	"
+	" output:
+	"
+  "   		src: block 01
+  "   		  id:: b05b99ec-7e2a-4fc9-897d-0dd83823833d
+  "         bdyy: trgt: block 01 || ((746fc918-7149-4c11-a101-f1b17dffcd29))
+  "   		...
+  "   trgt: block 01
+  "   	id:: 746fc918-7149-4c11-a101-f1b17dffcd29
+  "   	rtrn: src: block 01 || ((b05b99ec-7e2a-4fc9-897d-0dd83823833d))
+  "   	line 02
+	"   nxt
+	"
+	normal! 's
+	let line_s = line(".")
+	normal! 't
+	IdPair
+	normal! 't
+	let line_t = line(".")
+	foldclose  " zc
+	normal! "udd
+	let block_t = join(GetCurrentFoldText(), "\n")
+	SetLocsInWorkOtl
+	GotoLine(g:session.work_otl.nxt)
+	normal! "u]P
+endfunction
+command! IdPair8MvTop call IdPair8MvTop()
 
 " replace change name
 function! SubstituteNameInBufDo(old_name, new_name)
@@ -2480,6 +2620,7 @@ function! OpenWikilinkInRegister() " SPC gü
 	" id:: a75152f0-3831-4b2c-af30-7a29755bea29
   " Wikilink satırını yank ettiysen (registerdaysa) onu açar
 	" Renamed from: OpenFilePathInRegisterAsWikilink -> OpenWikilinkInRegister
+  " rfr: possible-duplicate: _G.find_file_from_register = function() -- SPC ffc || ((98de9c7f-8087-45ce-b8ab-5038e20a20fa))
   " 
   " in: 
   "
@@ -2522,8 +2663,14 @@ function! OpenFilePathInRegisterAsUtl()
 endfunction
 command! OpenFilePathInRegisterAsUtl call OpenFilePathInRegisterAsUtl()
 
+" rfr: mapping: İ -> gotoDef() || ((d3246cd2-4b88-4427-926e-b75e1817c5c7))
 " nnoremap İ :Utl<CR>
-nnoremap İ :GotoDef<CR>
+" nnoremap İ :GotoDefNoignore<CR>
+nnoremap <A-i> :GotoDef<CR>
+  " id:: 3945064f-e78f-4af6-b62b-b062c45b6236
+	" GotoDef || ((5caa9c16-3450-426e-aa81-5b1879e1eb41))
+nnoremap gı :GotoDef<CR>
+" function! GotoDef(...) " SPC fd  || ((5caa9c16-3450-426e-aa81-5b1879e1eb41))
 " replaced with Ü/Sgd
 " nnoremap <leader>İ :ObsidianFollowLink<CR>
 nnoremap gİ :OpenFilePathInRegisterAsUtl<CR>
@@ -2537,15 +2684,15 @@ nnoremap gÜ :OpenWikilinkInRegister<CR>
 lua << EOF
 function _G.find_files_from_wikilink(filename)
 	-- id:: dde72887-af77-4e08-b7fa-3808dba1608e
+	-- print(vim.inspect("find_files_from_wikilink"))
 	local scopes = require("neoscopes")
   scopes.set_current("all")
 	require("telescope.builtin").find_files({
+    -- rfr: ~/.local/share/nvim/lazy/telescope.nvim/lua/telescope/builtin/__files.lua
 		search_dirs = scopes.get_current_dirs(),
 		search_file = filename,
-    -- find_command = "rg,--ignore,--hidden,files"
-    -- find_command = { "rg", "--ignore"},
-    -- find_command = { "rg"},
-    find_command = { "fd"},  -- respect .gitignore
+    find_command = { "fd", "--type", "f", "--color", "never", "--full-path" },  -- search as full-path
+    -- find_command = { "fd" },  
 	})
 	return 0
 end
@@ -2563,20 +2710,31 @@ end
 EOF
 
 function! GetWikilinkArg(filename)
+  " id:: fd43e189-c9eb-430c-8148-100a0672bcb2
 	" input: 
 	"   20231014-rtc-Yatirim101-Videolari
 	"   f/fkr
+  "   dir/file-with-ext.txt
+	"   lua/20240924-Lua--Which-Key-Table-2-Specs-Table-1004-144922.lua
 	"
 	" result:
 	"		20231014-rtc-Yatirim101-Videolari
 	"		f___fkr
+  "		dir/file-with-ext.txt
 	"
   let f01 = a:filename
-	" [[f/fkr]] -> f___fkr
-  let f03 = substitute(f01, '\/', '___', 'g')
+  let [is_dir, tmp] = GrepInString('\.\w\+$', f01)
+	if is_dir
+    " echo "dir path"
+    let f03 = f01
+    " leave `/` in place. they are used as directory separators
+	else
+    " [[f/fkr]] -> f___fkr
+    let f03 = substitute(f01, '\/', '___', 'g')
+    " substitute `/` with `___`. they are used as namespace separators
+	endif
 	return f03
 endfunction
-command! GetWikilinkArg call GetWikilinkArg()
 
 function! GetWikilink()
 	" id:: 147ef2c8-6835-456c-9b88-58798f983c04
@@ -2599,6 +2757,8 @@ command! GetWikilink call GetWikilink()
 
 function! GotoWikilinkAsArg(wikilink) "
   " id:: df9a3ffd-d644-4797-8224-c5e1d3019383
+	" not used anywhere
+	"
 	" input: 
   "   wikilink as argument
 	"
@@ -2638,6 +2798,7 @@ function! GotoWikilink(wikilink, ...) " SPC fn id=g15020
   if (nogitignore == 1)
     call v:lua.find_files_from_wikilink_nogitignore(wikilink)
   else
+		" echo "wikilink: " . wikilink
     call v:lua.find_files_from_wikilink(wikilink)
   endif
   return wikilink
@@ -2757,34 +2918,37 @@ function! GotoRef(grepper) " SPC fD id=g15022
 		let grepper = "Telescope"
 	endif
 
-	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def] = GetRef()
+	let [ref, refType] = GetRef()
 	normal! mI
-	if is_blocklink
+	if refType == g:RefType.blocklink
 		call GotoBlockRef(ref, grepper)
 	endif
-	if is_wikilink
+	if refType == g:RefType.wikilink
 		" call GotoWikilink(ref)
 		let ref02 = substitute(ref, '___', '\/', 'g')
     call GotoBlockRef(ref02, grepper)
 	endif
-	if is_filepath
+	if refType == g:RefType.filepath
 		" exe "e " . ref
     call GotoBlockRef(ref, grepper)
 	endif
-	if is_utl
+	if refType == g:RefType.utl
 		" exe "Utl openLink " . ref
     call GotoBlockRef(ref, grepper)
 	endif
-	if is_wikitag
+	if refType == g:RefType.wikitag
 		" call GotoWikilink(ref)
     call GotoBlockRef(ref, grepper)
 	endif
-	if is_block_def
+	if refType == g:RefType.block_def
     call GotoBlockRef(ref, grepper)
 	endif
 	if ref == ""
 		Utl
 	endif
+  if refType == g:RefType.require
+    call GotoBlockRef(ref, grepper)
+  endif
 
 endfunction
 command! GotoRef call GotoRef("")
@@ -2832,14 +2996,65 @@ function! GotoBlockRef(ref, grepper) " SPC fD
 	echo ref02
   if grepper == "Telescope"
     call v:lua.find_ref_from_logseq_block_ref(ref02)
-  else
+  elseif grepper == "live_grep"
+		let @* = ref02
+		call v:lua.live_grep_all()
+	else
     call GrepRef(ref02)
   endif
   return ref02
 endfunction
 command! GotoBlockRef call GotoBlockRef("", "")
 
-function! GotoBlockDefBuffer() " g*
+function! GotoBlockDefBufferNoJump()  " gQ
+	" id:: d56e5382-6be1-4713-ac85-685b8ce3b7ce
+	" rfr: sibling: function! GotoBlockDefBuffer() " gq g* || ((1494d523-ca2b-47e4-a556-fec429ca1427))
+	" input: 
+	"   some text with ((<uuid>))
+	"
+	" result:
+	"   / register: <uuid>
+	"
+	let line = Strip2(getline("."))
+	let [is_blocklink, ref01] = GrepInString(g:rgx.is_blocklink, line)
+	let [is_block_def, ref03] = GrepInString(g:rgx.is_block_def, line)
+	let [is_wikilink, ref02] = GrepInString(g:rgx.is_wikilink, line)
+	let [is_quoted, ref_quoted] = GrepInString(g:rgx.quoted, line)
+	let ref = expand('<cWORD>')
+	if is_quoted
+		let ref = ref_quoted
+	endif
+	if is_blocklink
+		let ref = ref01
+	endif
+	if is_block_def
+		let ref = ref03
+	endif
+	if is_wikilink
+		let ref = GetWikilinkArg(ref02)
+	endif
+
+	let @/ = ref
+  return ref
+endfunction
+command! GotoBlockDefBufferNoJump call GotoBlockDefBufferNoJump()
+
+function! GotoWORD() " g*
+	" id:: 2c040e74-ea8d-4384-8e67-e0c1fd678b97
+	" input: 
+	"   some word-with-parts
+	"
+	" result:
+	"   search the following string in buffer: word-with-parts
+	"
+	let word = expand('<cWORD>')
+	let @/ = word
+	normal! n
+  return word
+endfunction
+command! GotoWORD call GotoWORD()
+
+function! GotoBlockDefBuffer() " gq g*
 	" id:: 1494d523-ca2b-47e4-a556-fec429ca1427
 	" input: 
 	"   some text with ((<uuid>))
@@ -2847,17 +3062,7 @@ function! GotoBlockDefBuffer() " g*
 	" result:
 	"   search the following string in buffer: <uuid>
 	"
-	let line = Strip2(getline("."))
-	let [is_blocklink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
-	let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', line)
-	if is_blocklink
-		let ref = ref01
-	endif
-	if is_block_def
-		let ref = ref03
-	endif
-
-	let @/ = ref
+	let ref = GotoBlockDefBufferNoJump()
 	normal! N
   return ref
 endfunction
@@ -2879,26 +3084,35 @@ function! GotoBlockDefBufferInOtherWindow() " g*
 endfunction
 command! GotoBlockDefBufferInOtherWindow call GotoBlockDefBufferInOtherWindow()
 
-nnoremap g* :GotoBlockDefBuffer<CR>
+nnoremap g* :GotoWORD<CR>
 nnoremap gq :GotoBlockDefBuffer<CR>
 nnoremap gb :GotoBlockDefBufferInOtherWindow<CR>
+nnoremap gQ :GotoBlockDefBufferNoJump<CR>
 
-function! GotoLine() " gQ 
+function! GotoLineWSameText() " gS 
 	" id:: 1aa8bd57-b350-4472-a805-dcc5ee93c865
-	" input: 
+	" input: (cursor on some line)
+	"   some line
+	"   ...
+	"   ⁁some line
 	"
-	" result:
+	" result: (go to the same content by searching that line text)
+	"   ⁁some line
+	"   ...
+	"   some line
+	"
 	"
 	let line = Strip2(getline("."))
 	let line02 = substitute(line, "^\s*[-#]* \?", "", "")
 	let line03 = substitute(line02, "^- ", "", "")
 
 	let @/ = line03
+	" Search backwards 
 	normal! N
   return line03
 endfunction
-command! GotoLine call GotoLine()
-nnoremap gQ :GotoLine<CR>
+command! GotoLineWSameText call GotoLineWSameText()
+nnoremap gS :GotoLineWSameText<CR>
 
 function! GotoBlockDef(ref) " SPC fd 
 	" id:: 4a07276d-1ed9-40a2-9f12-c816bbf46ecd
@@ -2924,6 +3138,7 @@ endfunction
 command! GotoBlockDef call GotoBlockDef("")
 
 function GrepInString(pattern, string)
+	" id:: 254af958-f8a5-48be-8e35-9ea5fa71bdaa
 	" rfr: [[20231018-Vimscript-Grep-Function]] <url:file:///~/projects/study/logseq-study/pages/20231018-Vimscript-Grep-Function.md#r=g15043>
 
 	let pattern = a:pattern
@@ -2958,12 +3173,406 @@ function! GetRef()
 	"
 	"   2f128e0f-....-46ad-894a-de3265ae8b26 
 	"
-	let line = Strip2(getline("."))
+	" let line = Strip2(getline("."))
+	let line = getline(".")
 	return GetRefArg(line)
 endfunction
 command! GetRef call GetRef()
 
+function! RfcRegexLookbehind()
+  " id:: e7a31725-d5c9-4f79-83bd-e54df7e71449
+  echo substitute("foobar", '\v(foo)\@<!bar', '@@@', '')
+  " foobar
+  echo substitute("okbar", '\v(foo)\@<!bar', '@@@', '')
+  " okbar
+  echo substitute("okbar", '\(foo\)\@<!bar', '@@@', '')
+  " ok@@@
+  " Correct with no-magic mode
+  echo substitute("okbar", '\v\(foo\)\@<!bar', '@@@', '')
+  " okbar
+  echo substitute("okbar", '\v(foo)@<!bar', '@@@', '')
+  " ok@@@
+  " Correct with magic mode
+
+  echo substitute("foobar", '\v\<foo', '@@@', '')
+  " foobar
+  echo substitute("foobar", '\v<foo', '@@@', '')
+  " @@@bar
+
+  echo substitute("one-two", '\w\+', '@@@', '')
+  " @@@-two
+  echo substitute("one-two", '\v[-\w]+', '@@@', '')
+  " one@@@two
+
+  let line = 'require("20240924-in-tags")'
+  let pattern = '\v(<require\(")@<=([^"]+)("\))@='
+  echo substitute(line, pattern, '@@@', '')
+  " require("@@@")
+endfunction
+
+function! OpenWikiLink(line)  
+	" id:: 6bd68cb7-2853-46c3-af27-cbfe52e4fe97
+	"
+	" let line = '[[20241228-fp-in-lua.lua]]'
+	" ref02:
+	" '20241228-fp-in-lua.lua'
+	" :b 20241228-fp-in-lua.lua
+	"
+	let line = a:line
+	let [is_wikilink, ref02] = GrepInString(g:rgx.is_wikilink, line)
+	if is_wikilink
+		exec "b " . ref02
+	endif
+endfunction
+
+function! GotoDefFReg()  " SPC ffc
+	" id:: 50b0c0cd-24cb-40ad-a7e5-7ac012f2c907
+	let line = @*
+	call GotoDefArg(line, 0)
+endfunction
+command! GotoDefFReg call GotoDefFReg()
+
+function! OpenWikiLinkFBuffersFReg()  " SPC ffcb
+	" id:: 6ce411c5-5a69-4d06-b2b4-ebc4fedd4aab
+	let line = @*
+	call OpenWikiLink(line)
+endfunction
+command! OpenWikiLinkFBuffersFReg call OpenWikiLinkFBuffersFReg()
+
+function! OpenWikiLinkFBuffers()  " SPC ffb
+	" id:: 6bd68cb7-2853-46c3-af27-cbfe52e4fe97
+	"
+	" let line = '[[20241228-fp-in-lua.lua]]'
+	" ref02:
+	" '20241228-fp-in-lua.lua'
+	" :b 20241228-fp-in-lua.lua
+	"
+	let line = getline(".")
+	call OpenWikiLink(line)
+endfunction
+command! OpenWikiLinkFBuffers call OpenWikiLinkFBuffers()
+
+function! OpenWikiLinkFLine()  " SPC ffb
+	" id:: 1757248a-f76b-4517-b8d7-8c4c4a33a2f7
+	let quoted_text = GetQuotedTextUnderCursor()
+	let cword = expand('<cword>')
+	let reg = @*
+	let [in_register, ref01] = GrepInString(g:rgx.is_wikilink, reg)
+	let line = getline(".")
+	let [in_line, ref02] = GrepInString(g:rgx.is_wikilink, line)
+	if in_line
+		echo line
+		call OpenWikiLink(line)
+	elseif in_register 
+		echo reg
+		call OpenWikiLink(reg)
+	elseif bufnr(quoted_text) 
+		echo quoted_text
+		exec "buffer " . bufnr(quoted_text) 
+	elseif bufnr(cword)
+		echo cword
+		exec "buffer " . bufnr(cword)
+	endif
+endfunction
+command! OpenWikiLinkFLine call OpenWikiLinkFLine()
+
+function! GetQuotedTextUnderCursor()
+	" id:: 2adb3203-645a-434c-a3fd-994553307ea2
+	" Vim: Get quoted text under cursor #f/prmp
+	" Vim: Assume that cursor is inside a quoted text. How can I get the text inside quotes? 
+	" [Claude](https://claude.ai/chat/674ce6d8-a63a-4a52-b5ce-51e8c946312c)
+	"
+	" Now it will work correctly in these cases:
+	" Cursor inside quoted text: "hello|world"
+	" Cursor on closing quote: "hello"|
+	" Cursor on opening quote: |"hello"
+	"
+	let line = getline('.')
+	let col = col('.') - 1  " Convert to 0-based index
+
+	" If cursor is on a quote, check if it's closing or opening
+	if line[col] ==# '"'
+		" Look backward first to determine if it's a closing quote
+		let i = col - 1
+		let quotes_count = 0
+		while i >= 0
+			if line[i] ==# '"'
+				let quotes_count += 1
+			endif
+			let i -= 1
+		endwhile
+
+		" If odd number of quotes before cursor, this is a closing quote
+		" Move cursor one position left
+		if quotes_count % 2 == 0
+			" This is an opening quote
+		else
+			let col -= 1
+		endif
+	endif
+
+	" Find the surrounding quotes
+	let start = -1
+	let end = -1
+
+	" Search backward for opening quote
+	let i = col
+	while i >= 0
+		if line[i] ==# '"'
+			let start = i
+			break
+		endif
+		let i -= 1
+	endwhile
+
+	" Search forward for closing quote
+	let i = col
+	while i < len(line)
+		if line[i] ==# '"'
+			let end = i
+			break
+		endif
+		let i += 1
+	endwhile
+
+	if start != -1 && end != -1
+		return line[start+1:end-1]
+	endif
+	return ''
+endfunction
+
+function! OpenBufferFCWord()  " SPC ffbw
+	let word = expand('<cword>')
+	exec "b " . word
+endfunction
+command! OpenBufferFCWord call OpenBufferFCWord()
+
+function! OpenBufferFCQuote()  " SPC ffbw
+	" "edits_pprv" = "20241121-wk-edits-1121-134809.lua",
+	let word = GetQuotedTextUnderCursor()
+	exec "b " . word
+endfunction
+command! OpenBufferFCQuote call OpenBufferFCQuote()
+
+function! OpenBufferFLine()  " SPC ffbb
+	" id:: 6bd68cb7-2853-46c3-af27-cbfe52e4fe97
+	"
+	" a01:
+	" let line = '[[20241228-fp-in-lua.lua]]'
+	" ref02:
+	" '20241228-fp-in-lua.lua'
+	" :b 20241228-fp-in-lua.lua
+	"
+	" a02:
+	" --script=20241228-fp-in-lua.lua
+	"
+	" a02:
+	" require("20241228-fp-in-lua.lua")
+	"
+	let line = getline(".")
+	let [ref, refType] = GetRefArg(line)
+	if refType == g:RefType.wikilink
+		exec "b " . ref
+	endif
+  if refType == g:RefType.require
+		exec "b " . ref
+  endif
+  if refType == g:RefType.script_arg
+		exec "b " . ref
+  endif
+endfunction
+command! OpenBufferFLine call OpenBufferFLine()
+
 function! GetRefArg(line) 
+  " id:: c639de96-98d0-4152-8718-62bae2c089ce
+	" input: 
+	"
+	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
+	"   [[20231018-Vimscript-Grep-Function]]
+	"   ~/.vim/bundle/vim-infoman/plugin/vim-infoman.vim
+	"   ~/projects/myrepo/work/work.otl
+	"   #ndx Title
+	"
+	" result:
+	"
+	"   2f128e0f-....-46ad-894a-de3265ae8b26 
+	"
+  " debug: [[20250915-debug-GetRefArg.vim]]
+  "
+	let line = a:line
+	let ref = ""
+	let [is_blocklink, ref01] = GrepInString(g:rgx.is_blocklink, line)
+	" let [is_linelink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
+	let [is_wikilink, ref02] = GrepInString(g:rgx.is_wikilink, line)
+
+	let [is_block_def, ref03] = GrepInString(g:rgx.is_block_def, line)
+	if !is_block_def
+    " echo "inside !is_block_def"
+    let next_line = getline(line('.') + 1)
+    let [is_block_def, ref03] = GrepInString(g:rgx.is_block_def, next_line)
+    " echo ref03
+	endif
+  " echo "02: " . ref03
+
+	" Error: GotoDef with BlockRef 20241209  `prg/vim f/error` || ((d123a2ba-6b16-4b98-9249-88e77cd7b12f))
+	let line02 = substitute(line, '\v`[^` ]+`', '', 'g')
+	let [is_filepath, ref04] = GrepInString(g:rgx.is_filepath, line02)
+  " > <url:file:///~/projects/study/logbook/log_20220927.md#r=g13408>
+	" ~/prj/myrepo/logseq-myrepo/exmp/20241205/20241119_specs.tsv
+	" /Users/mertnuhoglu/prj/myrepo/logseq-myrepo/exmp/20241117-setops-ndx-files/20241119-specs.tsv
+	" echo matchstr(line, g:rgx.is_utl)
+	let [is_utl, ref05] = GrepInString(g:rgx.is_utl_url, line)
+	let [is_wikitag, ref06] = GrepInString(g:rgx.is_wikitag, line)
+	if is_utl
+		let is_filepath = 0
+	endif
+
+  " match: 20240924-in-tags
+	" pattern1:
+	" package.loaded["20241117-wk-edits"] = nil
+	" pattern2:
+  " local append_map = require("20241117-wk-edits")
+	" serialize_cfile("20241225-serialize-in-cfile-dir-data-01.lua", { a = "ali", b = { c = 10 } })
+	" pattern3:
+	" local specs_lua_fn = "20241022-specs-all"
+	let words = '(require|reload|package.loaded|serialize_cfile|write_cfile|write_tsv|read_tsv|readLines|writeLines|read_tsv_cfile|read_file|read_cfile|read_tsv_file_as_tbl|read_tsv_cfile_as_tbl|read_tsv_file|read_tsv_cfile)'
+	" let pattern1 = '(<package.loaded\[")@<=([^"]+)("\])@='
+	"  let pattern2 = '(<require\(")@<=([^"]+)("\))@='
+  let pattern2 = '(<' . words . '\([^)"]*")@<=([^"]+)(".*\))@='
+	let pattern3 = '(<local \w{1,20} \= ")@<=([^/"]+)(")@='
+	" let pattern = '\v(' . pattern1 . ')|(' . pattern2 . ')'
+	" let pattern = '\v(' . pattern1 . ')|(' . pattern2 . ')|(' . pattern3 . ')'
+  " id:: ebd0ee1d-76db-48e3-a9df-2d0f53b634d4
+	" '\v((<package.loaded\[")@<=([^"]+)("\])@=)|((<require\(")@<=([^"]+)("\))@=)|((<local \w{1,20} *= *")@<=([^"]+)(")@=)'
+	" let [is_require, ref07] = GrepInString('\v' . pattern3, line)
+	" E871: (NFA regexp) Can't have a multi follow a multi
+	" Fix: \w+ *\= * -> \w{1,20} \= 
+	" let pattern = '\v(package\.loaded\[")([^"]+)("\])|(require\(")([^"]+)("\))|(local \w{1,20} = ")([^"]+)(")'
+	" let [is_require, ref07] = GrepInString(pattern, line)
+	" E872: (NFA regexp) Too many '('
+	" Fix: Use switch:
+	" let [is_require1, ref07a] = GrepInString('\v' . pattern1, line)
+	let [is_require2, ref07b] = GrepInString('\v' . pattern2, line)
+	let [is_require3, ref07c] = GrepInString('\v' . pattern3, line)
+	" if is_require1
+	" 	let is_require = is_require1
+	" 	let ref07 = ref07a
+	"
+	" match nushell file paths:
+	" let \w\+ = \$"(\$\w\+)\/\([^"]\+\)
+	" \v(let \w+ \= \$"\(\$\w+\)\/)@<=([^"]+)
+	" matches:
+	" let fp_sorted = $"($DATA_DIR)/all-refid-date.json"
+	"
+	let pattern4 = '\v(let \w+ \= \$"\(\$\w+\)\/)@<=([^"]+)'
+	let [is_require4, ref07d] = GrepInString('' . pattern4, line)
+
+  if is_require2
+		let is_require = is_require2
+		let ref07 = ref07b
+  elseif is_require3
+		let is_require = is_require3
+		let ref07 = ref07c
+  elseif is_require4
+		let is_require = is_require4
+		let ref07 = ref07d
+	else
+		let is_require = 0
+		let ref07 = ''
+	endif
+
+	" .. [[--script=20241124-named-arguments-in-command-line-02.R ]]
+	" ->
+	" 20241124-named-arguments-in-command-line-02.R
+  let pattern = '\v(--script\=)@<=([^ ]+)'
+	let [is_script_arg, ref08] = GrepInString(pattern, line)
+
+	" tags_pprv = "20241022-specs-all.lua",
+	" ->
+	" 20241022-specs-all.lua
+	let [is_quoted_filename, ref09] = GrepInString(g:rgx.quoted_filename, line)
+	let [is_unquoted_filename, ref09b] = GrepInString(g:rgx.unquoted_filename, line)
+
+	" let line = '<vimhelp:fireplace-documentation>'
+	let [is_vimhelp, ref10] = GrepInString(g:rgx.is_utl_vimhelp, line)
+	"
+
+	let [is_url, ref_url] = GrepInString(g:rgx.is_url, line)
+
+	let debug = {
+					\ 'is_block_def': is_block_def,
+					\ 'is_wikitag': is_wikitag,
+					\ 'is_blocklink': is_blocklink,
+					\ 'is_wikilink': is_wikilink,
+					\ 'is_filepath': is_filepath,
+					\ 'is_utl': is_utl,
+					\ 'is_require': is_require,
+					\ 'is_script_arg': is_script_arg,
+					\ 'is_quoted_filename': is_quoted_filename,
+					\ 'is_unquoted_filename': is_unquoted_filename,
+					\ 'is_vimhelp': is_vimhelp
+					\}
+	call WriteRunlogVim("# GetRefArg():")
+	call WriteRunlogVim(string(debug))
+
+	let refType = ''
+  if is_url
+    let ref = ref_url
+    let refType = g:RefType.url
+  endif
+  if is_block_def
+    let ref = ref03
+    let refType = g:RefType.block_def
+  endif
+	if is_wikitag
+		let ref = ref06
+    let refType = g:RefType.wikitag
+	endif
+	if is_blocklink
+		let ref = ref01
+    let refType = g:RefType.blocklink
+	endif
+	if is_wikilink
+		let ref = GetWikilinkArg(ref02)
+    let refType = g:RefType.wikilink
+	endif
+	if is_filepath && !is_wikilink
+		let ref = ref04
+    let refType = g:RefType.filepath
+	endif
+	if is_utl
+    let ref05b = substitute(ref05, ".*<url:file:\/\/\/", "", "")
+    let ref = substitute(ref05b, ">\s*", "", "")
+    let refType = g:RefType.utl
+	endif
+  if is_require
+    let ref = ref07
+    let refType = g:RefType.require
+  endif
+  if is_script_arg
+    let ref = ref08
+    let refType = g:RefType.script_arg
+  endif
+	if empty(refType)
+		if is_quoted_filename
+			let ref = ref09
+			let refType = g:RefType.quoted_filename
+		elseif is_unquoted_filename
+			let ref = ref09b
+			let refType = g:RefType.unquoted_filename
+		endif
+	endif
+	if is_vimhelp
+    let ref10b = substitute(ref10, ".*<vimhelp:", "", "")
+    let ref = substitute(ref10b, ">", "", "")
+    let refType = g:RefType.vimhelp
+	endif
+	return [ref, refType]
+endfunction
+command! GetRefArg call GetRefArg()
+
+function! GetRefArg20241011(line) 
+  " rfr: replaced-by: function! GetRefArg(line)  || ((c639de96-98d0-4152-8718-62bae2c089ce))
 	" input: 
 	"
 	"   ((2f128e0f-....-46ad-894a-de3265ae8b26))
@@ -2980,7 +3589,7 @@ function! GetRefArg(line)
 	let ref = ""
 	let [is_blocklink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
 	" let [is_linelink, ref01] = GrepInString('\(((\)\@<=[^)]\+\())\)\@=', line)
-	let [is_wikilink, ref02] = GrepInString('\(\[\[\)\@<=[^\]]\+\(]]\)\@=', line)
+	let [is_wikilink, ref02] = GrepInString(g:rgx.wikilink_content, line)
 
 	let [is_block_def, ref03] = GrepInString('\(\<id:: \)\@<=\(.*\)\(\s*$\)\@=', line)
 	if !is_block_def
@@ -2998,6 +3607,13 @@ function! GetRefArg(line)
 	if is_utl
 		let is_filepath = 0
 	endif
+
+  " match: 20240924-in-tags
+  " local append_map = require("20240924-in-tags")
+	let words = 'require|reload'
+  let pattern = '\v(<' . words . '\(")@<=([^"]+)("\))@='
+  " id:: ebd0ee1d-76db-48e3-a9df-2d0f53b634d4
+	let [is_require, ref07] = GrepInString(pattern, line)
 
   if is_block_def
     let ref = ref03
@@ -3018,11 +3634,43 @@ function! GetRefArg(line)
     let ref05b = substitute(ref05, ".*<url:file:\/\/\/", "", "")
     let ref = substitute(ref05b, ">\s*", "", "")
 	endif
-	return [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def]
+  if is_require
+    let ref = ref07
+  endif
+	return [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def, is_require]
 endfunction
-command! GetRefArg call GetRefArg()
+function! Rcf20241011_EnumType()
+  " Vimscript: Is there enum type? #f/prompt #prg/vim
+  "   id:: cc68be50-2fbe-4747-8e57-d70dcab5de5f
+  let g:Colors = {
+      \ 'RED': 0,
+      \ 'GREEN': 1,
+      \ 'BLUE': 2
+      \ }
+  if some_color == g:Colors.RED
+      " Do something for red
+  endif
+endfunction
 
-function! GotoDef(...) " SPC fd 
+function! GotoDefSplit() " SPC ıv
+	only
+	SplitVertical
+	GotoDef
+endfunction
+command! GotoDefSplit call GotoDefSplit()
+
+function! GotoDefHorizontal() " SPC ıs
+	SplitHorizontal
+	GotoDef
+endfunction
+command! GotoDefHorizontal call GotoDefHorizontal()
+
+command! GotoDef lua require("user.mert-lua-nvim").gotoDef()  
+  " id:: d3246cd2-4b88-4427-926e-b75e1817c5c7
+	" local function gotoDef() -- SPC ffe or İ || ((1348ce1d-805d-431c-a2a2-83d57b7e941f))
+nnoremap İ :GotoDef<CR>
+
+function! GotoDefFfz(...) " SPC fd 
 	" id:: 5caa9c16-3450-426e-aa81-5b1879e1eb41
 	" input: 
 	"   cursor is on top of the following word:
@@ -3039,14 +3687,25 @@ function! GotoDef(...) " SPC fd
 	" By default: don't respect gitignore
   let nogitignore = get(a:, 1, 0)
 	return GotoDefArg(line, nogitignore)
+	" function! GotoDefArg(line, nogitignore) "  || ((b92df8f3-0ca4-4977-96ff-944d17e70498))
 endfunction
-command! GotoDef call GotoDef()
+command! GotoDefFfz call GotoDefFfz()
+
+function! GotoDefFClipboard()  " SPC etc
+	" id:: d50c6f85-2c38-4577-898a-2f4a68ea427f
+	let line = @*
+  let nogitignore = get(a:, 1, 0)
+	return GotoDefArg(line, nogitignore)
+endfunction
+command! GotoDefFClipboard call GotoDefFClipboard()
 
 function! GotoDefArg(line, nogitignore) " 
+  " id:: b92df8f3-0ca4-4977-96ff-944d17e70498
 	" input: 
 	"
 	"   title ((2f128e0f-....-46ad-894a-de3265ae8b26))
 	"   [[20231018-Vimscript-Grep-Function]]
+	"   [[lua/20240924-Lua--Which-Key-Table-2-Specs-Table-1004-144922.lua]]
 	"
 	" result:
 	"
@@ -3055,28 +3714,38 @@ function! GotoDefArg(line, nogitignore) "
 	"
 	let line = a:line
   let nogitignore = a:nogitignore
-	let [ref, is_blocklink, is_wikilink, is_wikitag, is_filepath, is_utl, is_block_def] = GetRefArg(line)
+  let [ref, refType] = GetRefArg(line) " || ((c639de96-98d0-4152-8718-62bae2c089ce))
 	" normal! mI
-	if is_blocklink
+	if refType == g:RefType.blocklink
 		call GotoBlockDef(ref)
 	endif
-	if is_wikilink
+	if refType == g:RefType.wikilink
 		call GotoWikilink(ref, nogitignore)
 	endif
-	if is_filepath
+	if refType == g:RefType.filepath
 		exe "e " . ref
 	endif
-	if is_utl
+	if refType == g:RefType.utl
 		exe "Utl openLink " . ref
 	endif
-	if is_wikitag
+	if refType == g:RefType.wikitag
 		call GotoWikilink(ref, nogitignore)
 	endif
-	if is_block_def
+	if refType == g:RefType.block_def
     call GotoBlockRef(ref, "")
+	endif
+	if refType == g:RefType.vimhelp
+		exe "h " . ref
 	endif
 	if ref == ""
 		Utl
+	endif
+	" Vim: Set containment check function #f/prmp
+	"   id:: 49e05fb2-836b-467e-b6fb-97993b42c8c8
+	" I have other criteria as well. Instead of or operator, is there a set containment check function?
+	" [Claude](https://claude.ai/chat/88fff252-9dac-4d11-94e3-afe17025a284)
+	if index([g:RefType.require, g:RefType.script_arg, g:RefType.quoted_filename], refType) >= 0
+		call GotoWikilink(ref, nogitignore)
 	endif
 endfunction
 command! GotoDefArg call GotoDefArg()
@@ -3105,12 +3774,13 @@ function! GotoDefFromRegister() "
 endfunction
 command! GotoDefFromRegister call GotoDefFromRegister()
 
-function! GotoBlockOrWikilinkNogitignore() " SPC flD
+function! GotoDefNoignore() " SPC flD
   " id:: b6911bef-e4a2-4fa6-bdbb-3e5ac7da7c80
   " don't respect .gitignore in find_files()
-	call GotoDef(1)
+	" call GotoDef(1)
+	call GotoDefFfz(1)
 endfunction
-command! GotoBlockOrWikilinkNogitignore call GotoBlockOrWikilinkNogitignore()
+command! GotoDefNoignore call GotoDefNoignore()
 
 function! GotoBlockOrWikilink20231204() 
 	" id:: 040394ed-ed1a-4d11-b26a-5d7bb0054993
@@ -3248,4 +3918,22 @@ function! Tab3GotoDef()
 	GotoDef
 endfunction
 command! Tab3GotoDef call Tab3GotoDef()
+
+function! SourceVimWk()  " SPC dvsw
+	" id:: b0510cb3-90a6-4772-9ddb-cdf1e7f57ee6
+	source /Users/mertnuhoglu/prj/private_dotfiles/vim/my-vim-custom2/plugin/my-vim-custom2.vim
+	source /Users/mertnuhoglu/prj/private_dotfiles/.config/lazyvim/lua/user/mert-lua.lua
+	" source /Users/mertnuhoglu/prj/private_dotfiles/.config/lazyvim/lua/config/which-key.lua
+	lua require('user.mert-lua').reload_which_key()
+endfunction
+command! SourceVimWk call SourceVimWk()
+
+function! UpdateWk8Source()  " SPC dvsu
+  " id:: 715fa587-9ac7-4acf-96dd-e0baca12e23d
+	lua require('user.mert-lua').packagePathAdg()
+	source /Users/mertnuhoglu/prj/myrepo/logseq-myrepo/exmp/20250319-update-wk-tags/20250508-dfl-root-to-stnd.lua
+	source /Users/mertnuhoglu/prj/myrepo/logseq-myrepo/exmp/20250319-update-wk-tags/20250509-dfl-wk-update.lua
+	SourceVimWk
+endfunction
+command! UpdateWk8Source call UpdateWk8Source()
 
